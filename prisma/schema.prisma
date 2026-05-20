@@ -12,3 +12,19 @@ generator client {
 datasource db {
   provider = "mysql"
 }
+
+enum Role {
+  ADMIN
+  LAB_HEAD
+  PRODI_HEAD
+  ADMIN_STAF
+  LAB_STAFF
+}
+
+model User {
+  id       String @id @db.VarChar(7)
+  email    String @unique @db.VarChar(255)
+  name     String @db.VarChar(100)
+  role     Role
+  password String @db.VarChar(255)
+}
