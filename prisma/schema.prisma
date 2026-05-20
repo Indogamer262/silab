@@ -58,3 +58,34 @@ model Consumable {
 
   @@map("consumable")
 }
+
+enum DraftStatus {
+  DRAFT
+  LOCKED
+}
+
+model ProcurementDraft {
+  id                Int                 @id @default(autoincrement())
+  date              DateTime
+  userId            Int                 @map("user_id")
+  user              User                @relation(fields: [userId], references: [id])
+  status            DraftStatus
+  procurementDetail ProcurementDetail[]
+}
+
+enum ReviewStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model ProcurementDetail {
+  id               Int              @id @default(autoincrement())
+  quntity          Int
+  price            BigInt
+  status           ReviewStatus
+  draftId          Int              @map("draft_id")
+  itemId           Int              @map("item_id")
+  procurementDraft ProcurementDraft @relation(fields: [draftId], references: [id])
+  item             Item             @relation(fields: [itemId], references: [id])
+}
