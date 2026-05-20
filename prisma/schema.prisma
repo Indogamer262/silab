@@ -17,7 +17,7 @@ enum Role {
   ADMIN
   LAB_HEAD
   PRODI_HEAD
-  ADMIN_STAF
+  ADMIN_STAFF
   LAB_STAFF
 }
 
@@ -29,4 +29,32 @@ model User {
   password String @db.VarChar(255)
 
   @@map("user")
+}
+
+enum Category {
+  ELECTRONICS
+  NON_ELECTRONICS
+}
+
+model Item {
+  id          Int          @id @default(autoincrement())
+  name        String       @db.VarChar(100)
+  category    Category
+  quantity    Int
+  price       BigInt
+  link        String       @db.VarChar(255)
+  consumables Consumable[]
+
+  @@map("item")
+}
+
+model Consumable {
+  id     Int    @id
+  name   String
+  unit   String
+  stock  Int
+  itemId Int    @unique @map("item_id")
+  item   Item   @relation(fields: [itemId], references: [id])
+
+  @@map("consumable")
 }
