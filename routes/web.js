@@ -1,21 +1,23 @@
-const express = require('express')
+import express from 'express'
 const router = express.Router()
 
 router.use(express.urlencoded({extended: false}))
 
-router.post('/receiver', (req, res) => {
-    const name = req.body.name
-    const email = req.body.email
-    //res.status(200).render('received', {name, email})
-})
-
-router.get('/form', (req, res) => {
-    //res.status(200).render('forms')
-})
-
 router.get('/', (req, res) => {
-   // res.status(200).render('index')
+    res.render('index', { title: 'Selamat Datang' })
 })
 
+router.get('/login', (req, res) => {
+    res.render('login', { title: 'Login SILAB' })
+})
 
-module.exports = router
+router.post('/login', (req, res) => {
+    // Logika autentikasi Prisma akan di sini nanti
+    res.redirect('/dashboard')
+})
+
+router.get('/dashboard', (req, res) => {
+    res.render('dashboard', { title: 'Dashboard', user: { name: 'User', role: 'ADMIN' } })
+})
+
+export default router
