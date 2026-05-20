@@ -27,4 +27,6 @@ model User {
   name     String @db.VarChar(100)
   role     Role
   password String @db.VarChar(255)
+
+  @@map("user")
 }
