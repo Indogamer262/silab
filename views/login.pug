@@ -1,0 +1,12 @@
+extends layout
+
+block content
+  h2 Login
+  form(action="/login" method="POST")
+    label(for="email") Email
+    input(type="email" name="email" id="email" required)
+    
+    label(for="password") Password
+    input(type="password" name="password" id="password" required)
+    
+    button(type="submit") Masuk
