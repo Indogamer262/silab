@@ -1,8 +1,9 @@
-const express = require('express')
-const app = express()
-const router = require('./routes/web')
+import express from 'express'
+import router from './routes/web.js'
 
-app.set('view engine', 'ejs')
+const app = express()
+
+app.set('view engine', 'pug')
 app.use(router)
 
 const PORT = 5000
