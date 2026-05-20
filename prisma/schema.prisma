@@ -11,7 +11,6 @@ generator client {
 
 datasource db {
   provider = "mysql"
-  url      = env("DATABASE_URL")
 }
 
 enum Role {
@@ -44,7 +43,6 @@ model Item {
   id                 Int                 @id @default(autoincrement())
   name               String              @db.VarChar(100)
   category           Category
-  quantity           Int
   price              BigInt
   link               String              @db.VarChar(255)
   consumable         Consumable?
