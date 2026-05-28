@@ -1,12 +1,36 @@
 extends layout
 
 block content
-  h2 Login
-  form(action="/login" method="POST")
-    label(for="email") Email
-    input(type="email" name="email" id="email" required)
-    
-    label(for="password") Password
-    input(type="password" name="password" id="password" required)
-    
-    button(type="submit") Masuk
+  h2.text-2xl.font-bold.mb-6 Login
+
+  if error
+    .bg-red-100.border.border-red-400.text-red-700.px-4.py-3.rounded.mb-4(role="alert")
+      span= error
+
+  form(action="/login" method="POST").space-y-4
+    .flex.flex-col.gap-1
+      label(for="email").font-medium Email
+      input(
+        type="email"
+        name="email"
+        id="email"
+        required
+        autocomplete="email"
+        class="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+      )
+
+    .flex.flex-col.gap-1
+      label(for="password").font-medium Password
+      input(
+        type="password"
+        name="password"
+        id="password"
+        required
+        autocomplete="current-password"
+        class="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+      )
+
+    button(
+      type="submit"
+      class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition font-semibold"
+    ) Masuk
