@@ -1,0 +1,24 @@
+extends layout
+
+block content
+  .bg-white.p-8.rounded-xl.shadow-sm.border.border-gray-100
+    h3.text-2xl.font-bold.text-gray-800.mb-2 Selamat Datang di SILAB
+    p.text-gray-600.mb-8 Anda masuk sebagai #[span.font-semibold.text-blue-600= user.role]
+
+    .grid.grid-cols-1(class="md:grid-cols-3") gap-6
+      .bg-blue-50.p-6.rounded-lg.border.border-blue-100
+        h4.text-sm.font-bold.text-blue-700.uppercase.tracking-wider.mb-4 Profil Akun
+        .space-y-3
+          div
+            p.text-xs.text-blue-500.font-semibold Nama Lengkap
+            p.text-gray-800= user.name
+          div
+            p.text-xs.text-blue-500.font-semibold Email
+            p.text-gray-800= user.email
+          div
+            p.text-xs.text-blue-500.font-semibold Role / Jabatan
+            span.inline-block.mt-1.px-2.py-1.bg-blue-600.text-white.text-xs.rounded= user.role
+
+      //- Tempat untuk ringkasan statistik atau shortcut fitur di masa depan
+      .col-span-2.flex.items-center.justify-center.border-2.border-dashed.border-gray-200.rounded-lg
+        p.text-gray-400 Modul manajemen inventaris akan muncul di sini.
