@@ -1,23 +1,30 @@
 import express from 'express'
+import { showLogin, processLogin, logout } from '../controllers/authController.js'
+import { requireAuth } from '../middleware/auth.js'
+
 const router = express.Router()
 
-router.use(express.urlencoded({extended: false}))
+router.use(express.urlencoded({ extended: false }))
 
+// ─── Halaman Utama ────────────────────────────────────────────────────────────
 router.get('/', (req, res) => {
+    if (req.session.user) {
+        return res.redirect('/dashboard')
+    }
     res.render('index', { title: 'Selamat Datang' })
 })
 
-router.get('/login', (req, res) => {
-    res.render('login', { title: 'Login SILAB' })
-})
+// ─── Autentikasi ─────────────────────────────────────────────────────────────
+router.get('/login', showLogin)
+router.post('/login', processLogin)
+router.post('/logout', requireAuth, logout)
 
-router.post('/login', (req, res) => {
-    // Logika autentikasi Prisma akan di sini nanti
-    res.redirect('/dashboard')
-})
-
-router.get('/dashboard', (req, res) => {
-    res.render('dashboard', { title: 'Dashboard', user: { name: 'User', role: 'ADMIN' } })
+// ─── Route Terproteksi ────────────────────────────────────────────────────────
+router.get('/dashboard', requireAuth, (req, res) => {
+    res.render('dashboard', {
+        title: 'Dashboard',
+        user: res.locals.user,
+    })
 })
 
 export default router
