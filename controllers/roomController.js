@@ -67,34 +67,40 @@ export const create = async (req, res) => {
 export const store = async (req, res) => {
   const { name, capacity, location, userId } = req.body
 
-  if (!name || !capacity || !location || !userId) {
-    req.session.flash = { error: 'Semua field wajib diisi.', old: { name, capacity, location, userId } }
+  const nameTrimmed = name?.trim() || ''
+  const locationTrimmed = location?.trim() || ''
+  const userIdTrimmed = userId?.trim() || ''
+
+  const oldData = { name: nameTrimmed, capacity, location: locationTrimmed, userId: userIdTrimmed }
+
+  if (!nameTrimmed || !capacity || !locationTrimmed || !userIdTrimmed) {
+    req.session.flash = { error: 'Semua field wajib diisi.', old: oldData }
     return res.redirect('/admin/rooms/create')
   }
 
   const capacityInt = parseInt(capacity, 10)
-  if (isNaN(capacityInt) || capacityInt < 0) {
-    req.session.flash = { error: 'Kapasitas harus berupa angka positif.', old: { name, capacity, location, userId } }
+  if (isNaN(capacityInt) || capacityInt <= 0) {
+    req.session.flash = { error: 'Kapasitas harus berupa angka positif (minimal 1).', old: oldData }
     return res.redirect('/admin/rooms/create')
   }
 
   try {
     // Verify user exists
-    const userExists = await prisma.user.findUnique({ where: { id: userId } })
+    const userExists = await prisma.user.findUnique({ where: { id: userIdTrimmed } })
     if (!userExists) {
-      req.session.flash = { error: 'Penanggung jawab tidak ditemukan.', old: { name, capacity, location, userId } }
+      req.session.flash = { error: 'Penanggung jawab tidak ditemukan.', old: oldData }
       return res.redirect('/admin/rooms/create')
     }
 
     await prisma.room.create({
-      data: { name, capacity: capacityInt, location, userId },
+      data: { name: nameTrimmed, capacity: capacityInt, location: locationTrimmed, userId: userIdTrimmed },
     })
 
-    req.session.flash = { success: `Ruangan "${name}" berhasil ditambahkan.` }
+    req.session.flash = { success: `Ruangan "${nameTrimmed}" berhasil ditambahkan.` }
     res.redirect('/admin/rooms')
   } catch (err) {
     console.error('Room store error:', err)
-    req.session.flash = { error: 'Gagal menyimpan ruangan. Silakan coba lagi.' }
+    req.session.flash = { error: 'Gagal menyimpan ruangan. Silakan coba lagi.', old: oldData }
     res.redirect('/admin/rooms/create')
   }
 }
@@ -128,7 +134,10 @@ export const edit = async (req, res) => {
       title: 'Edit Ruangan',
       user: res.locals.user,
       currentPath: '/admin/rooms',
-      target,
+      target: {
+        ...target,
+        ...(req.session.flash?.old ?? {}),
+      },
       users,
       error: req.session.flash?.error ?? null,
     })
@@ -153,28 +162,41 @@ export const update = async (req, res) => {
     return res.redirect('/admin/rooms')
   }
 
-  if (!name || !capacity || !location || !userId) {
-    req.session.flash = { error: 'Semua field wajib diisi.' }
+  const nameTrimmed = name?.trim() || ''
+  const locationTrimmed = location?.trim() || ''
+  const userIdTrimmed = userId?.trim() || ''
+
+  const oldData = { name: nameTrimmed, capacity, location: locationTrimmed, userId: userIdTrimmed }
+
+  if (!nameTrimmed || !capacity || !locationTrimmed || !userIdTrimmed) {
+    req.session.flash = { error: 'Semua field wajib diisi.', old: oldData }
     return res.redirect(`/admin/rooms/${roomId}/edit`)
   }
 
   const capacityInt = parseInt(capacity, 10)
-  if (isNaN(capacityInt) || capacityInt < 0) {
-    req.session.flash = { error: 'Kapasitas harus berupa angka positif.' }
+  if (isNaN(capacityInt) || capacityInt <= 0) {
+    req.session.flash = { error: 'Kapasitas harus berupa angka positif (minimal 1).', old: oldData }
     return res.redirect(`/admin/rooms/${roomId}/edit`)
   }
 
   try {
+    // Verify user exists
+    const userExists = await prisma.user.findUnique({ where: { id: userIdTrimmed } })
+    if (!userExists) {
+      req.session.flash = { error: 'Penanggung jawab tidak ditemukan.', old: oldData }
+      return res.redirect(`/admin/rooms/${roomId}/edit`)
+    }
+
     await prisma.room.update({
       where: { id: roomId },
-      data: { name, capacity: capacityInt, location, userId },
+      data: { name: nameTrimmed, capacity: capacityInt, location: locationTrimmed, userId: userIdTrimmed },
     })
 
-    req.session.flash = { success: `Ruangan "${name}" berhasil diperbarui.` }
+    req.session.flash = { success: `Ruangan "${nameTrimmed}" berhasil diperbarui.` }
     res.redirect('/admin/rooms')
   } catch (err) {
     console.error('Room update error:', err)
-    req.session.flash = { error: 'Gagal memperbarui ruangan.' }
+    req.session.flash = { error: 'Gagal memperbarui ruangan.', old: oldData }
     res.redirect(`/admin/rooms/${roomId}/edit`)
   }
 }

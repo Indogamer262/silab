@@ -27,7 +27,7 @@ block content
       +selectInput('role', 'Role / Jabatan', roleOptions, old.role || '')
 
       .grid.grid-cols-1(class="md:grid-cols-2").gap-5
-        +passwordInput('password', 'Password', true, 'Minimal 6 karakter', 255)
+        +passwordInput('password', 'Password', true, 'Minimal 8 karakter', 255)
         +passwordInput('password_confirmation', 'Konfirmasi Password', true, 'Ulangi password', 255)
 
       //- Actions

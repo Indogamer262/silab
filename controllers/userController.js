@@ -67,41 +67,59 @@ export const create = (req, res) => {
 export const store = async (req, res) => {
   const { id, name, email, role, password, password_confirmation } = req.body
 
+  const idTrimmed = id?.trim() || ''
+  const nameTrimmed = name?.trim() || ''
+  const emailTrimmed = email?.trim() || ''
+  const roleTrimmed = role?.trim() || ''
+
+  const oldData = { id: idTrimmed, name: nameTrimmed, email: emailTrimmed, role: roleTrimmed }
+
   // ── Validation ──────────────────────────────────────────────────────────────
-  if (!id || !name || !email || !role || !password) {
-    req.session.flash = { error: 'Semua field wajib diisi.', old: { id, name, email, role } }
+  if (!idTrimmed || !nameTrimmed || !emailTrimmed || !roleTrimmed || !password) {
+    req.session.flash = { error: 'Semua field wajib diisi.', old: oldData }
     return res.redirect('/admin/users/create')
   }
 
-  if (id.length > 7) {
-    req.session.flash = { error: 'ID pengguna maksimal 7 karakter.', old: { id, name, email, role } }
+  if (idTrimmed.length > 7) {
+    req.session.flash = { error: 'ID pengguna maksimal 7 karakter.', old: oldData }
+    return res.redirect('/admin/users/create')
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(emailTrimmed)) {
+    req.session.flash = { error: 'Format email tidak valid.', old: oldData }
+    return res.redirect('/admin/users/create')
+  }
+
+  if (password.length < 8) {
+    req.session.flash = { error: 'Password minimal harus 8 karakter.', old: oldData }
     return res.redirect('/admin/users/create')
   }
 
   if (password !== password_confirmation) {
-    req.session.flash = { error: 'Password dan konfirmasi password tidak cocok.', old: { id, name, email, role } }
+    req.session.flash = { error: 'Password dan konfirmasi password tidak cocok.', old: oldData }
     return res.redirect('/admin/users/create')
   }
 
-  if (!ROLES.includes(role)) {
-    req.session.flash = { error: 'Role tidak valid.', old: { id, name, email, role } }
+  if (!ROLES.includes(roleTrimmed)) {
+    req.session.flash = { error: 'Role tidak valid.', old: oldData }
     return res.redirect('/admin/users/create')
   }
 
   try {
     // Check for duplicate ID or email
     const existing = await prisma.user.findFirst({
-      where: { OR: [{ id }, { email }] },
+      where: { OR: [{ id: idTrimmed }, { email: emailTrimmed }] },
     })
     if (existing) {
-      const field = existing.id === id ? 'ID' : 'Email'
-      req.session.flash = { error: `${field} sudah digunakan.`, old: { id, name, email, role } }
+      const field = existing.id === idTrimmed ? 'ID' : 'Email'
+      req.session.flash = { error: `${field} sudah digunakan.`, old: oldData }
       return res.redirect('/admin/users/create')
     }
 
     const hashedPassword = await bcrypt.hash(password, 10)
     await prisma.user.create({
-      data: { id, name, email, role, password: hashedPassword },
+      data: { id: idTrimmed, name: nameTrimmed, email: emailTrimmed, role: roleTrimmed, password: hashedPassword },
     })
 
     req.session.flash = { success: `Pengguna "${name}" berhasil ditambahkan.` }
@@ -133,7 +151,10 @@ export const edit = async (req, res) => {
       currentPath: '/admin/users',
       roles: ROLES,
       roleLabels: ROLE_LABELS,
-      target,
+      target: {
+        ...target,
+        ...(req.session.flash?.old ?? {}),
+      },
       error: req.session.flash?.error ?? null,
     })
     delete req.session.flash
@@ -152,44 +173,68 @@ export const update = async (req, res) => {
   const { name, email, role, password, password_confirmation } = req.body
   const userId = req.params.id
 
-  if (!name || !email || !role) {
-    req.session.flash = { error: 'Nama, email, dan role wajib diisi.' }
+  const nameTrimmed = name?.trim() || ''
+  const emailTrimmed = email?.trim() || ''
+  const roleTrimmed = role?.trim() || ''
+
+  const oldData = { name: nameTrimmed, email: emailTrimmed, role: roleTrimmed }
+
+  if (!nameTrimmed || !emailTrimmed || !roleTrimmed) {
+    req.session.flash = { error: 'Nama, email, dan role wajib diisi.', old: oldData }
     return res.redirect(`/admin/users/${userId}/edit`)
   }
 
-  if (!ROLES.includes(role)) {
-    req.session.flash = { error: 'Role tidak valid.' }
+  if (!ROLES.includes(roleTrimmed)) {
+    req.session.flash = { error: 'Role tidak valid.', old: oldData }
     return res.redirect(`/admin/users/${userId}/edit`)
   }
 
-  // If password is provided, validate confirmation
-  if (password && password !== password_confirmation) {
-    req.session.flash = { error: 'Password dan konfirmasi password tidak cocok.' }
+  // Prevent self-demotion lockout
+  if (userId === req.session.user.id && roleTrimmed !== req.session.user.role) {
+    req.session.flash = { error: 'Anda tidak dapat mengubah role Anda sendiri untuk mencegah lockout.', old: oldData }
     return res.redirect(`/admin/users/${userId}/edit`)
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(emailTrimmed)) {
+    req.session.flash = { error: 'Format email tidak valid.', old: oldData }
+    return res.redirect(`/admin/users/${userId}/edit`)
+  }
+
+  // If password is provided, validate length and confirmation
+  if (password) {
+    if (password.length < 8) {
+      req.session.flash = { error: 'Password minimal harus 8 karakter.', old: oldData }
+      return res.redirect(`/admin/users/${userId}/edit`)
+    }
+    if (password !== password_confirmation) {
+      req.session.flash = { error: 'Password dan konfirmasi password tidak cocok.', old: oldData }
+      return res.redirect(`/admin/users/${userId}/edit`)
+    }
   }
 
   try {
     // Check email uniqueness (exclude current user)
     const emailTaken = await prisma.user.findFirst({
-      where: { email, NOT: { id: userId } },
+      where: { email: emailTrimmed, NOT: { id: userId } },
     })
     if (emailTaken) {
-      req.session.flash = { error: 'Email sudah digunakan oleh pengguna lain.' }
+      req.session.flash = { error: 'Email sudah digunakan oleh pengguna lain.', old: oldData }
       return res.redirect(`/admin/users/${userId}/edit`)
     }
 
-    const data = { name, email, role }
+    const data = { name: nameTrimmed, email: emailTrimmed, role: roleTrimmed }
     if (password) {
       data.password = await bcrypt.hash(password, 10)
     }
 
     await prisma.user.update({ where: { id: userId }, data })
 
-    req.session.flash = { success: `Pengguna "${name}" berhasil diperbarui.` }
+    req.session.flash = { success: `Pengguna "${nameTrimmed}" berhasil diperbarui.` }
     res.redirect('/admin/users')
   } catch (err) {
     console.error('User update error:', err)
-    req.session.flash = { error: 'Gagal memperbarui pengguna.' }
+    req.session.flash = { error: 'Gagal memperbarui pengguna.', old: oldData }
     res.redirect(`/admin/users/${userId}/edit`)
   }
 }
