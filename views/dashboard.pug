@@ -1,11 +1,11 @@
-extends layout
+extends layouts/loggedin
 
 block content
   .bg-white.p-8.rounded-xl.shadow-sm.border.border-gray-100
     h3.text-2xl.font-bold.text-gray-800.mb-2 Selamat Datang di SILAB
     p.text-gray-600.mb-8 Anda masuk sebagai #[span.font-semibold.text-blue-600= user.role]
 
-    .grid.grid-cols-1(class="md:grid-cols-3") gap-6
+    .grid.grid-cols-1(class="md:grid-cols-3").gap-6
       .bg-blue-50.p-6.rounded-lg.border.border-blue-100
         h4.text-sm.font-bold.text-blue-700.uppercase.tracking-wider.mb-4 Profil Akun
         .space-y-3
