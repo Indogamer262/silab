@@ -1,6 +1,8 @@
 import express from 'express'
 import { showLogin, processLogin, logout } from '../controllers/authController.js'
-import { requireAuth } from '../middleware/auth.js'
+import * as userController from '../controllers/userController.js'
+import * as roomController from '../controllers/roomController.js'
+import { requireAuth, requireRole } from '../middleware/auth.js'
 
 const router = express.Router()
 
@@ -24,7 +26,24 @@ router.get('/dashboard', requireAuth, (req, res) => {
     res.render('dashboard', {
         title: 'Dashboard',
         user: res.locals.user,
+        currentPath: '/dashboard',
     })
 })
 
-export default router
+// ─── Admin: Kelola Pengguna ───────────────────────────────────────────────────
+router.get('/admin/users', requireAuth, requireRole('ADMIN'), userController.index)
+router.get('/admin/users/create', requireAuth, requireRole('ADMIN'), userController.create)
+router.post('/admin/users', requireAuth, requireRole('ADMIN'), userController.store)
+router.get('/admin/users/:id/edit', requireAuth, requireRole('ADMIN'), userController.edit)
+router.post('/admin/users/:id', requireAuth, requireRole('ADMIN'), userController.update)
+router.post('/admin/users/:id/delete', requireAuth, requireRole('ADMIN'), userController.destroy)
+
+// ─── Admin: Kelola Ruangan ────────────────────────────────────────────────────
+router.get('/admin/rooms', requireAuth, requireRole('ADMIN'), roomController.index)
+router.get('/admin/rooms/create', requireAuth, requireRole('ADMIN'), roomController.create)
+router.post('/admin/rooms', requireAuth, requireRole('ADMIN'), roomController.store)
+router.get('/admin/rooms/:id/edit', requireAuth, requireRole('ADMIN'), roomController.edit)
+router.post('/admin/rooms/:id', requireAuth, requireRole('ADMIN'), roomController.update)
+router.post('/admin/rooms/:id/delete', requireAuth, requireRole('ADMIN'), roomController.destroy)
+
+export default router

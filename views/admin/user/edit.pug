@@ -1,0 +1,48 @@
+extends ../../layouts/loggedin
+include ../../components/_form-components
+
+block content
+  //- Error Flash
+  if error
+    .bg-red-50.border.border-red-300.text-red-800.px-4.py-3.rounded-lg.mb-6.flex.items-center.gap-3(role="alert")
+      svg.w-5.h-5.flex-shrink-0(fill="currentColor" viewBox="0 0 20 20")
+        path(fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd")
+      span= error
+
+  //- Header
+  .mb-6
+    h3.text-2xl.font-bold.text-gray-800 Edit Pengguna
+    p.text-sm.text-gray-500.mt-1 Perbarui informasi pengguna #[span.font-semibold.text-blue-600= target.name]
+
+  //- Form
+  .bg-white.rounded-xl.shadow-sm.border.border-gray-100.p-8
+    form(action=`/admin/users/${target.id}` method="POST").space-y-5
+      .grid.grid-cols-1(class="md:grid-cols-2").gap-5
+        //- ID is read-only
+        .flex.flex-col.gap-1
+          label.font-medium.text-gray-700.text-sm ID Pengguna
+          input.border.border-gray-200.rounded-lg.px-3.py-2.w-full.bg-gray-50.text-gray-500.cursor-not-allowed(
+            type="text"
+            value=target.id
+            disabled
+          )
+          input(type="hidden" name="id" value=target.id)
+
+        +textInput('name', 'Nama Lengkap', 'text', target.name, true, 'Masukkan nama lengkap', 100)
+
+      +textInput('email', 'Email', 'email', target.email, true, 'contoh@email.com', 255)
+
+      - const roleOptions = roles.map(r => ({ value: r, text: roleLabels[r] }))
+      +selectInput('role', 'Role / Jabatan', roleOptions, target.role, user.id === target.id)
+
+      //- Password section (optional on edit)
+      .border-t.border-gray-100.pt-5
+        p.text-sm.text-gray-500.mb-4 Kosongkan password jika tidak ingin mengubahnya.
+        .grid.grid-cols-1(class="md:grid-cols-2").gap-5
+          +passwordInput('password', 'Password Baru', false, 'Biarkan kosong jika tidak diubah', 255)
+          +passwordInput('password_confirmation', 'Konfirmasi Password', false, 'Ulangi password baru', 255)
+
+      //- Actions
+      .flex.items-center.gap-3.pt-4.border-t.border-gray-100
+        +primaryButton('Simpan Perubahan')
+        +secondaryButton('Batal', '/admin/users')
