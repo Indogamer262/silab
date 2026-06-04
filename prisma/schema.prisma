@@ -103,7 +103,6 @@ model ProcurementDetail {
 
 model Room {
   name      String      @id @db.VarChar(100)
-  capacity  Int
   location  String      @db.VarChar(100)
   inventory Inventory[]
 
