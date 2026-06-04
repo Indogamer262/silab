@@ -1,0 +1,235 @@
+extends ../layouts/loggedin
+include ../components/_form-components
+
+block content
+  //- Flash Messages
+  if success
+    .bg-green-50.border.border-green-300.text-green-800.px-4.py-3.rounded-lg.mb-6.flex.items-center.gap-3(role="alert")
+      svg.w-5.h-5.flex-shrink-0(fill="currentColor" viewBox="0 0 20 20")
+        path(fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd")
+      span= success
+
+  if error
+    .bg-red-50.border.border-red-300.text-red-800.px-4.py-3.rounded-lg.mb-6.flex.items-center.gap-3(role="alert")
+      svg.w-5.h-5.flex-shrink-0(fill="currentColor" viewBox="0 0 20 20")
+        path(fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd")
+      span= error
+
+  //- Navigation & Header
+  .flex.items-center.gap-2.text-sm.text-gray-500.mb-4
+    a(href="/procurement" class="hover:text-blue-600 transition") Pengadaan Barang
+    span &gt;
+    span.text-gray-800 Detail Draf
+
+  div(class="flex flex-col lg:flex-row gap-6 mb-6")
+    //- Left Card: Info Draf
+    .flex-1.bg-white.p-6.rounded-xl.shadow-sm.border.border-gray-100
+      .flex.items-center.justify-between.mb-4
+        h4.text-lg.font-bold.text-gray-800 Informasi Draf
+        if draft.status === 'LOCKED'
+          span(class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800")
+            svg.w-3.h-3(fill="currentColor" viewBox="0 0 20 20")
+              path(fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd")
+            | Locked / Diajukan
+        else
+          span(class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800")
+            svg.w-3.h-3(fill="currentColor" viewBox="0 0 20 20")
+              path(d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z")
+            | Draft
+
+      .grid.grid-cols-2.gap-4.text-sm
+        div
+          p.text-xs.text-gray-400 ID Draf
+          p.font-mono.font-semibold.text-gray-800= `#PR-${draft.id.toString().padStart(4, '0')}`
+        div
+          p.text-xs.text-gray-400 Tanggal Dibuat
+          p.font-semibold.text-gray-800= draft.date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+        div
+          p.text-xs.text-gray-400 Diajukan Oleh
+          p.font-semibold.text-gray-800= draft.user.name
+        div
+          p.text-xs.text-gray-400 Total Anggaran
+          - let totalCost = 0n
+          each detail in draft.procurementDetails
+            - totalCost += detail.price
+          p.font-bold.text-blue-600.text-base= formatRupiah(totalCost)
+
+      if draft.status !== 'LOCKED'
+        .mt-6.pt-4.border-t.border-gray-100.flex.gap-2
+          form(action=`/procurement/${draft.id}/lock` method="POST" onsubmit="return confirm('Apakah Anda yakin ingin mengunci draf ini? Setelah dikunci, data tidak dapat diubah lagi.')")
+            button(type="submit" class="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white px-4 py-2 rounded-lg transition font-semibold text-sm shadow-sm")
+              svg.w-4.h-4(fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24")
+                path(stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z")
+              | Kunci &amp; Ajukan Draf
+          +secondaryButton('Kembali', '/procurement')
+      else
+        .mt-6.pt-4.border-t.border-gray-100
+          +secondaryButton('Kembali ke Daftar', '/procurement')
+
+    //- Right Card: Panduan Pengisian
+    div(class="bg-gradient-to-br from-blue-800 to-blue-900 p-6 rounded-xl shadow-sm text-white flex flex-col justify-between w-full lg:w-80")
+      div
+        h4.text-lg.font-bold.mb-2 Panduan Pengadaan
+        ul.text-xs.text-blue-100.space-y-2.list-disc.list-inside
+          <li>Tentukan tipe barang: <b>Inventaris</b> (aset jangka panjang) atau <b>BHP</b> (habis pakai).</li>
+          <li><b>BHP</b> wajib mencantumkan <b>satuan</b> (contoh: roll, pack).</li>
+          <li><b>Inventaris</b> dapat dihubungkan dengan barang lama yang ingin <b>digantikan</b>.</li>
+          <li>Pastikan link pembelian valid untuk verifikasi harga oleh Kaprodi.</li>
+      .mt-4.bg-blue-950.bg-opacity-40.p-3.rounded.border.border-blue-700.text-center
+        p.text-xs.text-blue-300 Status review detail barang akan diperbarui oleh Ketua Program Studi.
+
+  //- List Items
+  .bg-white.rounded-xl.shadow-sm.border.border-gray-100.overflow-hidden.mb-6
+    .p-6.border-b.border-gray-100
+      h4.text-lg.font-bold.text-gray-800 Item Pengadaan
+    .overflow-x-auto
+      table.w-full.text-sm
+        thead
+          tr.bg-gray-50.border-b.border-gray-200
+            th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs No
+            th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Nama Barang
+            th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Tipe / Detail
+            th.px-6.py-3.text-right.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Harga Satuan
+            th.px-6.py-3.text-center.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Jumlah
+            th.px-6.py-3.text-right.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Total Harga
+            th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Link Pembelian
+            th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Menggantikan
+            if draft.status !== 'LOCKED'
+              th.px-6.py-3.text-center.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Aksi
+        tbody
+          if draft.procurementDetails && draft.procurementDetails.length > 0
+            each detail, index in draft.procurementDetails
+              tr(class="border-b border-gray-100 hover:bg-gray-50 transition")
+                td.px-6.py-4.text-gray-500= index + 1
+                td.px-6.py-4
+                  p.font-semibold.text-gray-900= detail.item.name
+                td.px-6.py-4
+                  if detail.item.consumable
+                    span(class="inline-block px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded-full font-medium")
+                      | BHP (Satuan: #{detail.item.consumable.unit})
+                  else
+                    span(class="inline-block px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-full font-medium")
+                      | Inventaris (#{detail.item.category})
+                td.px-6.py-4.text-right.text-gray-600= formatRupiah(detail.item.price)
+                td.px-6.py-4.text-center.text-gray-800.font-medium= detail.quantity
+                td.px-6.py-4.text-right.font-semibold.text-gray-900= formatRupiah(detail.price)
+                td.px-6.py-4
+                  a(href=detail.item.link target="_blank" class="text-blue-600 hover:underline inline-flex items-center gap-1")
+                    | Link Beli
+                    svg.w-3.h-3(fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24")
+                      path(stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14")
+                td.px-6.py-4
+                  if detail.replacedInventory
+                    div.text-xs
+                      p.font-semibold.text-gray-800= detail.replacedInventory.item.name
+                      p.text-gray-500.font-mono= detail.replacedInventory.qrCode
+                      p.text-gray-400= detail.replacedInventory.room.name
+                  else
+                    span.text-gray-400 -
+                if draft.status !== 'LOCKED'
+                  td.px-6.py-4.text-center
+                    form(action=`/procurement/${draft.id}/items/${detail.id}/delete` method="POST")
+                      +dangerButton('Hapus')
+          else
+            tr
+              td.px-6.py-8.text-center.text-gray-400(colspan=(draft.status !== 'LOCKED' ? '9' : '8'))
+                p.text-lg.mb-1 Draf pengadaan ini kosong.
+                if draft.status !== 'LOCKED'
+                  p.text-sm Isi formulir di bawah ini untuk menambahkan barang.
+
+  //- Add Item Form
+  if draft.status !== 'LOCKED'
+    .bg-white.rounded-xl.shadow-sm.border.border-gray-100.p-6.mb-6
+      h4.text-lg.font-bold.text-gray-800.mb-4 + Tambah Item ke Draf
+      
+      form(action=`/procurement/${draft.id}/items` method="POST" class="space-y-4")
+        .grid.grid-cols-1(class="md:grid-cols-2").gap-4
+          //- Tipe Item Selection
+          .flex.flex-col.gap-1
+            label(for="itemType").font-medium.text-gray-700.text-sm Jenis Pengadaan
+            select(
+              name="itemType"
+              id="itemType"
+              required
+              class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white"
+            )
+              option(value="" disabled selected=(!old.itemType)) -- Pilih Jenis --
+              option(value="inventaris" selected=(old.itemType === 'inventaris')) Inventaris (Aset Tetap)
+              option(value="bhp" selected=(old.itemType === 'bhp')) BHP (Barang Habis Pakai)
+
+          //- Nama Barang
+          +textInput('name', 'Nama Barang / BHP', 'text', old.name || '', true, 'Contoh: Solder Hakko FX-88D atau Timah Solder')
+
+        .grid.grid-cols-1(class="md:grid-cols-3").gap-4
+          //- Harga Satuan
+          +textInput('price', 'Harga Satuan (Rupiah)', 'number', old.price || '', true, 'Contoh: 150000')
+          
+          //- Jumlah
+          +textInput('quantity', 'Jumlah Barang', 'number', old.quantity || '', true, 'Contoh: 5')
+
+          //- Link Pembelian
+          +textInput('link', 'Link Pembelian', 'text', old.link || '', true, 'https://tokopedia.com/...')
+
+        //- Conditional Fields container
+        #inventaris-fields(class=(old.itemType === 'inventaris' ? '' : 'hidden') + " space-y-4 border-t border-dashed border-gray-100 pt-4")
+          h5.text-sm.font-bold.text-gray-700 Detail Inventaris
+          .grid.grid-cols-1(class="md:grid-cols-2").gap-4
+            //- Category
+            .flex.flex-col.gap-1
+              label(for="category").font-medium.text-gray-700.text-sm Kategori Inventaris
+              select(
+                name="category"
+                id="category"
+                class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white"
+              )
+                option(value="" disabled selected=(!old.category)) -- Pilih Kategori --
+                option(value="ELECTRONICS" selected=(old.category === 'ELECTRONICS')) Elektronik (ELECTRONICS)
+                option(value="NON_ELECTRONICS" selected=(old.category === 'NON_ELECTRONICS')) Non-Elektronik (NON_ELECTRONICS)
+            
+            //- Replaced Inventory
+            .flex.flex-col.gap-1
+              label(for="replacedInventoryId").font-medium.text-gray-700.text-sm Barang Inventaris yang Digantikan (Opsional)
+              select(
+                name="replacedInventoryId"
+                id="replacedInventoryId"
+                class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white"
+              )
+                option(value="") -- Tidak Menggantikan Barang Apapun --
+                each inv in inventories
+                  option(value=inv.id selected=(parseInt(old.replacedInventoryId) === inv.id))
+                    | [#{inv.qrCode || 'No QR'}] #{inv.item.name} - #{inv.room.name} (#{inv.condition})
+
+        #bhp-fields(class=(old.itemType === 'bhp' ? '' : 'hidden') + " space-y-4 border-t border-dashed border-gray-100 pt-4")
+          h5.text-sm.font-bold.text-gray-700 Detail BHP
+          .grid.grid-cols-1(class="md:grid-cols-2").gap-4
+            //- Unit (Satuan)
+            +textInput('unit', 'Satuan (Unit)', 'text', old.unit || '', false, 'Contoh: roll, pack, box, lembar')
+
+        .pt-4.border-t.border-gray-100.flex.justify-end.gap-2
+          +primaryButton('+ Tambahkan Item', 'submit')
+
+    script.
+      document.getElementById('itemType').addEventListener('change', function() {
+        const type = this.value;
+        const inventarisFields = document.getElementById('inventaris-fields');
+        const bhpFields = document.getElementById('bhp-fields');
+        const categoryInput = document.getElementById('category');
+        const unitInput = document.getElementById('unit');
+        
+        if (type === 'inventaris') {
+          inventarisFields.classList.remove('hidden');
+          bhpFields.classList.add('hidden');
+          categoryInput.setAttribute('required', 'required');
+          unitInput.removeAttribute('required');
+        } else if (type === 'bhp') {
+          inventarisFields.classList.add('hidden');
+          bhpFields.classList.remove('hidden');
+          categoryInput.removeAttribute('required');
+          unitInput.setAttribute('required', 'required');
+        } else {
+          inventarisFields.classList.add('hidden');
+          bhpFields.classList.add('hidden');
+          categoryInput.removeAttribute('required');
+          unitInput.removeAttribute('required');
+        }
+      });

@@ -2,6 +2,7 @@ import express from 'express'
 import { showLogin, processLogin, logout } from '../controllers/authController.js'
 import * as userController from '../controllers/userController.js'
 import * as roomController from '../controllers/roomController.js'
+import * as procurementController from '../controllers/procurementController.js'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 
 const router = express.Router()
@@ -45,5 +46,14 @@ router.post('/admin/rooms', requireAuth, requireRole('ADMIN'), roomController.st
 router.get('/admin/rooms/:id/edit', requireAuth, requireRole('ADMIN'), roomController.edit)
 router.post('/admin/rooms/:id', requireAuth, requireRole('ADMIN'), roomController.update)
 router.post('/admin/rooms/:id/delete', requireAuth, requireRole('ADMIN'), roomController.destroy)
+
+// ─── Kepala Lab: Pengadaan Barang ─────────────────────────────────────────────
+router.get('/procurement', requireAuth, requireRole('LAB_HEAD'), procurementController.index)
+router.post('/procurement', requireAuth, requireRole('LAB_HEAD'), procurementController.store)
+router.get('/procurement/:id', requireAuth, requireRole('LAB_HEAD'), procurementController.show)
+router.post('/procurement/:id/lock', requireAuth, requireRole('LAB_HEAD'), procurementController.lock)
+router.post('/procurement/:id/items', requireAuth, requireRole('LAB_HEAD'), procurementController.addItem)
+router.post('/procurement/:id/items/:detailId/delete', requireAuth, requireRole('LAB_HEAD'), procurementController.removeItem)
+router.post('/procurement/:id/delete', requireAuth, requireRole('LAB_HEAD'), procurementController.destroy)
 
 export default router

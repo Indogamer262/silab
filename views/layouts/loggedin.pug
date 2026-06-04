@@ -29,6 +29,11 @@ html(lang="id")
                 href="/admin/rooms"
                 class=(currentPath === '/admin/rooms' ? 'bg-blue-900 text-white' : 'text-blue-200 hover:bg-blue-700 hover:text-white')
               ) Kelola Ruangan
+            if user.role === 'LAB_HEAD'
+              a.block.px-4.py-2.rounded.transition.font-semibold(
+                href="/procurement"
+                class=(currentPath.startsWith('/procurement') ? 'bg-blue-900 text-white' : 'text-blue-200 hover:bg-blue-700 hover:text-white')
+              ) Pengadaan Barang
         
         .p-4.border-t.border-blue-700
           form(action="/logout" method="POST")
