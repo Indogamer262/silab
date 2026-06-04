@@ -1,0 +1,15 @@
+doctype html
+html(lang="id")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    title SILAB | #{title || 'Landing'} 
+    link(rel="stylesheet", href="/css/style.css")
+  body.bg-gray-100.font-sans.antialiased.flex.flex-col.min-h-screen
+    header.bg-blue-600.text-white.p-4.shadow-md.relative.z-50
+      div.container.mx-auto.flex.justify-between.items-center
+        a(href="/") 
+          h1.text-2xl.font-bold SILAB
+          p.text-sm Sistem Informasi Inventaris Laboratorium
+    main.flex-grow.flex.flex-col
+      block content
