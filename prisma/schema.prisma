@@ -122,9 +122,9 @@ model Inventory {
   receivedDate                 DateTime            @map("received_date") @db.Date
   condition                    Condition
   itemId                       Int                 @map("item_id")
-  roomId                       Int                 @map("room_id")
+  roomId                       String              @db.VarChar(100) @map("room_id")
   item                         Item                @relation(fields: [itemId], references: [id])
-  room                         Room                @relation(fields: [roomId], references: [id])
+  room                         Room                @relation(fields: [roomId], references: [name])
   maintenanceLog               MaintenanceLog[]
   replacedByProcurementDetails ProcurementDetail[] @relation("InventoryReplacement")
 
