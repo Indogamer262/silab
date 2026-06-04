@@ -1,36 +1,34 @@
-extends layouts/default
+extends layouts/landing
+
+include components/_form-components
 
 block content
-  h2.text-2xl.font-bold.mb-6 Login
+  div(class="relative bg-gray-900 min-h-screen flex items-center justify-center")
+    //- Background Image with Overlay
+    div(class="absolute inset-0 z-0")
+      img(src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&q=80" alt="Server Room" class="w-full h-full object-cover")
+      div(class="absolute inset-0 bg-gradient-to-r from-gray-900/90 via-gray-900/60 to-gray-900/40")
+    
+    //- Content Container
+    div(class="container mx-auto px-6 relative z-10 flex flex-col items-center justify-center")
+      
+      div(class="w-full max-w-md")
+        div(class="text-center mb-8 text-white")
+          h1(class="text-4xl font-extrabold tracking-tight drop-shadow-md") SILAB
+          p(class="text-lg font-light opacity-90 drop-shadow") Sistem Informasi Inventaris Laboratorium
 
-  if error
-    .bg-red-100.border.border-red-400.text-red-700.px-4.py-3.rounded.mb-4(role="alert")
-      span= error
+        div(class="bg-white rounded-xl shadow-2xl p-8")
+          h2(class="text-2xl font-bold text-gray-800 mb-6 text-center") Masuk ke Sistem
+          
+          if error
+            .bg-red-100.border-l-4.border-red-500.text-red-700.p-4.mb-6(role="alert")
+              p= error
 
-  form(action="/login" method="POST").space-y-4
-    .flex.flex-col.gap-1
-      label(for="email").font-medium Email
-      input(
-        type="email"
-        name="email"
-        id="email"
-        required
-        autocomplete="email"
-        class="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-      )
-
-    .flex.flex-col.gap-1
-      label(for="password").font-medium Password
-      input(
-        type="password"
-        name="password"
-        id="password"
-        required
-        autocomplete="current-password"
-        class="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-      )
-
-    button(
-      type="submit"
-      class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition font-semibold"
-    ) Masuk
+          form(action="/login" method="POST" class="space-y-5")
+            +textInput('email', 'Email', 'email', '', true, 'nama@email.com')
+            +passwordInput('password', 'Password', true, '••••••••')
+            div(class="pt-2 [&_button]:w-full [&_button]:justify-center [&_button]:py-3 [&_button]:text-base")
+              +primaryButton('Log in', 'submit')
+            
+            div(class="text-center mt-6")
+              a(href="/" class="text-sm text-gray-500 hover:text-gray-700 hover:underline transition-colors") ← Kembali ke Beranda

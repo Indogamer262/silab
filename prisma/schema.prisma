@@ -87,14 +87,16 @@ enum ReviewStatus {
 }
 
 model ProcurementDetail {
-  id               Int              @id @default(autoincrement())
-  quantity         Int
-  price            BigInt
-  status           ReviewStatus
-  draftId          Int              @map("draft_id")
-  itemId           Int              @map("item_id")
-  procurementDraft ProcurementDraft @relation(fields: [draftId], references: [id])
-  item             Item             @relation(fields: [itemId], references: [id])
+  id                  Int              @id @default(autoincrement())
+  quantity            Int
+  price               BigInt
+  status              ReviewStatus
+  draftId             Int              @map("draft_id")
+  itemId              Int              @map("item_id")
+  replacedInventoryId Int?             @map("replaced_inventory_id")
+  procurementDraft    ProcurementDraft @relation(fields: [draftId], references: [id])
+  item                Item             @relation(fields: [itemId], references: [id])
+  replacedInventory   Inventory?       @relation("InventoryReplacement", fields: [replacedInventoryId], references: [id])
 
   @@map("procurement_detail")
 }
@@ -120,15 +122,16 @@ enum Condition {
 }
 
 model Inventory {
-  id             Int              @id @default(autoincrement())
-  qrCode         String?          @unique @map("qr_code") @db.VarChar(255)
-  receivedDate   DateTime         @map("received_date") @db.Date
-  condition      Condition
-  itemId         Int              @map("item_id")
-  roomId         Int              @map("room_id")
-  item           Item             @relation(fields: [itemId], references: [id])
-  room           Room             @relation(fields: [roomId], references: [id])
-  maintenanceLog MaintenanceLog[]
+  id                           Int                 @id @default(autoincrement())
+  qrCode                       String?             @unique @map("qr_code") @db.VarChar(255)
+  receivedDate                 DateTime            @map("received_date") @db.Date
+  condition                    Condition
+  itemId                       Int                 @map("item_id")
+  roomId                       Int                 @map("room_id")
+  item                         Item                @relation(fields: [itemId], references: [id])
+  room                         Room                @relation(fields: [roomId], references: [id])
+  maintenanceLog               MaintenanceLog[]
+  replacedByProcurementDetails ProcurementDetail[] @relation("InventoryReplacement")
 
   @@map("inventory")
 }
