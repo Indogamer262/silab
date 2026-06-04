@@ -102,12 +102,9 @@ model ProcurementDetail {
 }
 
 model Room {
-  id        Int         @id @default(autoincrement())
-  name      String      @db.VarChar(100)
+  name      String      @id @db.VarChar(100)
   capacity  Int
   location  String      @db.VarChar(100)
-  userId    String      @map("user_id") @db.VarChar(7)
-  user      User        @relation(fields: [userId], references: [id])
   inventory Inventory[]
 
   @@map("room")
