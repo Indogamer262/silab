@@ -216,49 +216,37 @@ async function main() {
     prisma.room.create({
       data: {
         name: 'Lab Elektronika Dasar',
-        capacity: 30,
         location: 'Gedung A Lantai 1',
-        userId: users[1].id, // LAB_HEAD
       },
     }),
     prisma.room.create({
       data: {
         name: 'Lab Sistem Digital',
-        capacity: 25,
         location: 'Gedung A Lantai 2',
-        userId: users[1].id,
       },
     }),
     prisma.room.create({
       data: {
         name: 'Lab Mikrokontroler',
-        capacity: 20,
         location: 'Gedung B Lantai 1',
-        userId: users[4].id, // LAB_STAFF
       },
     }),
     prisma.room.create({
       data: {
         name: 'Lab Jaringan Komputer',
-        capacity: 35,
         location: 'Gedung B Lantai 2',
-        userId: users[4].id,
       },
     }),
     prisma.room.create({
       data: {
         name: 'Lab Telekomunikasi',
-        capacity: 28,
-        location: 'Gedung C Lantai 1',
-        userId: users[5].id, // LAB_STAFF 2
+        location: 'Gedung C Lantai 1'
       },
     }),
     prisma.room.create({
       data: {
         name: 'Gudang Peralatan',
-        capacity: 50,
         location: 'Gedung A Basement',
-        userId: users[0].id, // ADMIN
       },
     }),
   ])
@@ -389,7 +377,7 @@ async function main() {
         receivedDate: new Date('2025-06-15'),
         condition: 'GOOD',
         itemId: items[0].id,
-        roomId: rooms[0].id,
+        roomId: rooms[0].name,
       },
     }),
     prisma.inventory.create({
@@ -398,7 +386,7 @@ async function main() {
         receivedDate: new Date('2025-06-15'),
         condition: 'GOOD',
         itemId: items[0].id,
-        roomId: rooms[1].id,
+        roomId: rooms[1].name,
       },
     }),
     prisma.inventory.create({
@@ -407,7 +395,7 @@ async function main() {
         receivedDate: new Date('2025-07-20'),
         condition: 'FAIR',
         itemId: items[1].id,
-        roomId: rooms[0].id,
+        roomId: rooms[0].name,
       },
     }),
     prisma.inventory.create({
@@ -416,7 +404,7 @@ async function main() {
         receivedDate: new Date('2025-08-10'),
         condition: 'GOOD',
         itemId: items[2].id,
-        roomId: rooms[2].id,
+        roomId: rooms[2].name,
       },
     }),
     prisma.inventory.create({
@@ -425,7 +413,7 @@ async function main() {
         receivedDate: new Date('2024-03-01'),
         condition: 'POOR',
         itemId: items[3].id,
-        roomId: rooms[3].id,
+        roomId: rooms[3].name,
       },
     }),
     prisma.inventory.create({
@@ -434,7 +422,7 @@ async function main() {
         receivedDate: new Date('2024-03-01'),
         condition: 'BROKEN',
         itemId: items[4].id,
-        roomId: rooms[3].id,
+        roomId: rooms[3].name,
       },
     }),
     prisma.inventory.create({
@@ -443,7 +431,7 @@ async function main() {
         receivedDate: new Date('2025-11-05'),
         condition: 'GOOD',
         itemId: items[5].id,
-        roomId: rooms[4].id,
+        roomId: rooms[4].name,
       },
     }),
     prisma.inventory.create({
@@ -452,7 +440,7 @@ async function main() {
         receivedDate: new Date('2026-01-20'),
         condition: 'GOOD',
         itemId: items[6].id,
-        roomId: rooms[2].id,
+        roomId: rooms[2].name,
       },
     }),
     prisma.inventory.create({
@@ -461,7 +449,7 @@ async function main() {
         receivedDate: new Date('2025-09-12'),
         condition: 'FAIR',
         itemId: items[7].id,
-        roomId: rooms[5].id,
+        roomId: rooms[5].name,
       },
     }),
     prisma.inventory.create({
@@ -470,7 +458,7 @@ async function main() {
         receivedDate: new Date('2025-12-01'),
         condition: 'LOST',
         itemId: items[1].id,
-        roomId: rooms[4].id,
+        roomId: rooms[4].name,
       },
     }),
   ])
