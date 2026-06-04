@@ -28,7 +28,6 @@ model User {
   role              Role
   password          String             @db.VarChar(255)
   procurementDrafts ProcurementDraft[]
-  rooms             Room[]
   maintenanceLogs   MaintenanceLog[]
 
   @@map("user")
