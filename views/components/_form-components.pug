@@ -1,0 +1,116 @@
+//- ─── Reusable Form Component Mixins ──────────────────────────────────────────
+
+//- Text / Email / Number / Password Input
+//- @param {string} name        - input name attribute
+//- @param {string} label       - label text
+//- @param {string} type        - input type (text, email, number, password)
+//- @param {string} value       - current value (empty string for new)
+//- @param {boolean} required   - whether field is required
+//- @param {string} placeholder - placeholder text
+//- @param {number} maxlength   - maxlength attribute (pass 0 or undefined to skip)
+mixin textInput(name, label, type, value, required, placeholder, maxlength)
+  .flex.flex-col.gap-1
+    label(for=name).font-medium.text-gray-700.text-sm= label
+    if type === 'number'
+      input(
+        type="number"
+        name=name
+        id=name
+        value=value
+        required=required
+        placeholder=placeholder
+        min="0"
+        class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+      )
+    else
+      input(
+        type=type
+        name=name
+        id=name
+        value=value
+        required=required
+        placeholder=placeholder
+        maxlength=maxlength || false
+        class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+      )
+
+//- Password Input with toggle
+//- @param {string} name        - input name attribute
+//- @param {string} label       - label text
+//- @param {boolean} required   - whether field is required
+//- @param {string} placeholder - placeholder text
+//- @param {number} maxlength   - maxlength attribute
+mixin passwordInput(name, label, required, placeholder, maxlength)
+  .flex.flex-col.gap-1
+    label(for=name).font-medium.text-gray-700.text-sm= label
+    .relative
+      input(
+        type="password"
+        name=name
+        id=name
+        required=required
+        placeholder=placeholder
+        maxlength=maxlength || false
+        class="border border-gray-300 rounded-lg px-3 py-2 w-full pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+      )
+      button(
+        type="button"
+        onclick="const input = this.previousElementSibling; if(input.type === 'password'){ input.type = 'text'; this.classList.add('text-blue-600'); this.classList.remove('text-gray-400'); } else { input.type = 'password'; this.classList.add('text-gray-400'); this.classList.remove('text-blue-600'); }"
+        class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none transition-colors"
+      )
+        svg(xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5")
+          path(stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z")
+          path(stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z")
+
+//- Select Dropdown
+//- @param {string} name          - select name attribute
+//- @param {string} label         - label text
+//- @param {Array}  options       - array of { value, text } objects
+//- @param {string} selectedValue - currently selected value
+//- @param {boolean} disabled     - whether the select is disabled
+mixin selectInput(name, label, options, selectedValue, disabled=false)
+  .flex.flex-col.gap-1
+    label(for=name).font-medium.text-gray-700.text-sm= label
+    select(
+      name=name
+      id=name
+      required=!disabled
+      disabled=disabled
+      class=`border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${disabled ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-white'}`
+    )
+      option(value="" disabled selected=(!selectedValue)) -- Pilih #{label} --
+      each opt in options
+        option(value=opt.value selected=(opt.value === selectedValue))= opt.text
+    if disabled
+      input(type="hidden" name=name value=selectedValue)
+
+//- Primary Action Button (blue)
+mixin primaryButton(text, type)
+  button(
+    type=type || 'submit'
+    class="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 active:bg-blue-800 transition font-semibold text-sm shadow-sm"
+  )= text
+
+//- Warning Button (amber) — used for edit actions
+mixin warningButton(text, href)
+  a(
+    href=href
+    class="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white px-4 py-2 rounded-lg transition font-semibold text-sm shadow-sm"
+  )= text
+
+//- Danger Button (red) — used for delete actions
+mixin dangerButton(text)
+  button(
+    type="submit"
+    class="inline-flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 active:bg-red-800 transition font-semibold text-sm shadow-sm"
+    onclick="return confirm('Apakah Anda yakin ingin menghapus data ini?')"
+  )= text
+
+//- Secondary Button (outlined) — used for cancel / back links
+mixin secondaryButton(text, href)
+  a(
+    href=href
+    class="inline-flex items-center gap-2 border border-gray-300 text-gray-700 px-5 py-2.5 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition font-semibold text-sm"
+  )= text
+
+
