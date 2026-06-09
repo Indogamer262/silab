@@ -56,8 +56,8 @@ block content
 
       if draft.status !== 'LOCKED'
         .mt-6.pt-4.border-t.border-gray-100.flex.gap-2
-          form(action=`/procurement/${draft.id}/lock` method="POST" onsubmit="return confirm('Apakah Anda yakin ingin mengunci draf ini? Setelah dikunci, data tidak dapat diubah lagi.')")
-            button(type="submit" class="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white px-4 py-2 rounded-lg transition font-semibold text-sm shadow-sm")
+          form#form-lock(action=`/procurement/${draft.id}/lock` method="POST")
+            button(type="button" class="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white px-4 py-2 rounded-lg transition font-semibold text-sm shadow-sm" onclick="customConfirm('Apakah Anda yakin ingin mengunci draf ini? Setelah dikunci, data tidak dapat diubah lagi.', { okText: 'Ya, Kunci', variant: 'warning', title: 'Kunci Draf' }).then(function(c){ if(c) document.getElementById('form-lock').submit(); });")
               svg.w-4.h-4(fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24")
                 path(stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z")
               | Kunci &amp; Ajukan Draf
@@ -128,8 +128,24 @@ block content
                     span.text-gray-400 -
                 if draft.status !== 'LOCKED'
                   td.px-6.py-4.text-center
-                    form(action=`/procurement/${draft.id}/items/${detail.id}/delete` method="POST")
-                      +dangerButton('Hapus')
+                    .flex.items-center.justify-center.gap-2
+                      button(
+                        type="button" 
+                        onclick=`openEditModal(${detail.id})` 
+                        class="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white px-3 py-1.5 rounded-lg transition font-semibold text-xs shadow-sm"
+                      )
+                        svg(class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24")
+                          path(stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z")
+                        | Edit
+                      form(id=`form-delete-${detail.id}` action=`/procurement/${draft.id}/items/${detail.id}/delete` method="POST" class="inline-block")
+                        button(
+                          type="button"
+                          class="inline-flex items-center gap-1.5 bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 active:bg-red-800 transition font-semibold text-xs shadow-sm"
+                          onclick=`customConfirm('Apakah Anda yakin ingin menghapus item ini?', { okText: 'Ya, Hapus', title: 'Hapus Item' }).then(function(c){ if(c) document.getElementById('form-delete-${detail.id}').submit(); });`
+                        )
+                          svg(class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24")
+                            path(stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16")
+                          | Hapus
           else
             tr
               td.px-6.py-8.text-center.text-gray-400(colspan=(draft.status !== 'LOCKED' ? '9' : '8'))
@@ -208,6 +224,129 @@ block content
         .pt-4.border-t.border-gray-100.flex.justify-end.gap-2
           +primaryButton('+ Tambahkan Item', 'submit')
 
+  each detail in draft.procurementDetails
+    if draft.status !== 'LOCKED'
+      //- Edit Modal
+      div(id=`edit-modal-${detail.id}` class="fixed inset-0 z-50 flex items-center justify-center hidden")
+        // backdrop
+        div(class="fixed inset-0 bg-gray-900 bg-opacity-50 transition-opacity duration-200 opacity-0" id=`edit-backdrop-${detail.id}` onclick=`closeEditModal(${detail.id})`)
+        // modal content
+        div(class="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 relative z-10 mx-4 transform transition-all scale-95 duration-200 opacity-0" id=`edit-content-${detail.id}`)
+          .flex.items-center.justify-between.mb-4.pb-3.border-b
+            h3.text-lg.font-bold.text-gray-800 Edit Item: #{detail.item.name}
+            button(type="button" class="text-gray-400 hover:text-gray-600 transition" onclick=`closeEditModal(${detail.id})`)
+              svg.w-6.h-6(fill="none" stroke="currentColor" viewBox="0 0 24 24")
+                path(stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12")
+          
+          form(action=`/procurement/${draft.id}/items/${detail.id}/edit` method="POST" class="space-y-4")
+            .grid.grid-cols-1(class="md:grid-cols-2").gap-4
+              .flex.flex-col.gap-1
+                label(for=`edit-itemType-${detail.id}`).font-medium.text-gray-700.text-sm Jenis Pengadaan
+                select(
+                  name="itemType"
+                  id=`edit-itemType-${detail.id}`
+                  required
+                  class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white"
+                  onchange=`toggleEditFields(${detail.id})`
+                )
+                  option(value="inventaris" selected=(!detail.item.consumable)) Inventaris (Aset Tetap)
+                  option(value="bhp" selected=(!!detail.item.consumable)) BHP (Barang Habis Pakai)
+
+              .flex.flex-col.gap-1
+                label(for=`edit-name-${detail.id}`).font-medium.text-gray-700.text-sm Nama Barang / BHP
+                input(
+                  type="text"
+                  name="name"
+                  id=`edit-name-${detail.id}`
+                  value=detail.item.name
+                  required
+                  placeholder="Contoh: Solder Hakko FX-88D atau Timah Solder"
+                  class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                )
+
+            .grid.grid-cols-1(class="md:grid-cols-3").gap-4
+              .flex.flex-col.gap-1
+                label(for=`edit-price-${detail.id}`).font-medium.text-gray-700.text-sm Harga Satuan (Rupiah)
+                input(
+                  type="number"
+                  name="price"
+                  id=`edit-price-${detail.id}`
+                  value=Number(detail.item.price)
+                  required
+                  placeholder="Contoh: 150000"
+                  min="1"
+                  class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                )
+              
+              .flex.flex-col.gap-1
+                label(for=`edit-quantity-${detail.id}`).font-medium.text-gray-700.text-sm Jumlah Barang
+                input(
+                  type="number"
+                  name="quantity"
+                  id=`edit-quantity-${detail.id}`
+                  value=detail.quantity
+                  required
+                  placeholder="Contoh: 5"
+                  min="1"
+                  class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                )
+
+              .flex.flex-col.gap-1
+                label(for=`edit-link-${detail.id}`).font-medium.text-gray-700.text-sm Link Pembelian
+                input(
+                  type="text"
+                  name="link"
+                  id=`edit-link-${detail.id}`
+                  value=detail.item.link
+                  required
+                  placeholder="https://tokopedia.com/..."
+                  class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                )
+
+            div(id=`edit-inventaris-fields-${detail.id}` class=(!detail.item.consumable ? '' : 'hidden') + " space-y-4 border-t border-dashed border-gray-100 pt-4")
+              h5.text-sm.font-bold.text-gray-700 Detail Inventaris
+              .grid.grid-cols-1(class="md:grid-cols-2").gap-4
+                .flex.flex-col.gap-1
+                  label(for=`edit-category-${detail.id}`).font-medium.text-gray-700.text-sm Kategori Inventaris
+                  select(
+                    name="category"
+                    id=`edit-category-${detail.id}`
+                    class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white"
+                  )
+                    option(value="" disabled selected=(!detail.item.category)) -- Pilih Kategori --
+                    option(value="ELECTRONICS" selected=(detail.item.category === 'ELECTRONICS')) Elektronik (ELECTRONICS)
+                    option(value="NON_ELECTRONICS" selected=(detail.item.category === 'NON_ELECTRONICS')) Non-Elektronik (NON_ELECTRONICS)
+                
+                .flex.flex-col.gap-1
+                  label(for=`edit-replacedInventoryId-${detail.id}`).font-medium.text-gray-700.text-sm Barang Inventaris yang Digantikan (Opsional)
+                  select(
+                    name="replacedInventoryId"
+                    id=`edit-replacedInventoryId-${detail.id}`
+                    class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white"
+                  )
+                    option(value="") -- Tidak Menggantikan Barang Apapun --
+                    each inv in inventories
+                      option(value=inv.id selected=(detail.replacedInventoryId === inv.id))
+                        | [#{inv.qrCode || 'No QR'}] #{inv.item.name} - #{inv.room.name} (#{inv.condition})
+
+            div(id=`edit-bhp-fields-${detail.id}` class=(!!detail.item.consumable ? '' : 'hidden') + " space-y-4 border-t border-dashed border-gray-100 pt-4")
+              h5.text-sm.font-bold.text-gray-700 Detail BHP
+              .grid.grid-cols-1(class="md:grid-cols-2").gap-4
+                .flex.flex-col.gap-1
+                  label(for=`edit-unit-${detail.id}`).font-medium.text-gray-700.text-sm Satuan (Unit)
+                  input(
+                    type="text"
+                    name="unit"
+                    id=`edit-unit-${detail.id}`
+                    value=(detail.item.consumable ? detail.item.consumable.unit : '')
+                    placeholder="Contoh: roll, pack, box, lembar"
+                    class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                  )
+
+            .pt-4.border-t.border-gray-100.flex.justify-end.gap-2
+              button(type="button" class="border border-gray-300 text-gray-700 px-5 py-2.5 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition font-semibold text-sm" onclick=`closeEditModal(${detail.id})`) Batal
+              button(type="submit" class="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 active:bg-blue-800 transition font-semibold text-sm shadow-sm") Simpan Perubahan
+
     script.
       document.getElementById('itemType').addEventListener('change', function() {
         const type = this.value;
@@ -233,3 +372,49 @@ block content
           unitInput.removeAttribute('required');
         }
       });
+
+      function openEditModal(id) {
+        const modal = document.getElementById(`edit-modal-${id}`);
+        const backdrop = document.getElementById(`edit-backdrop-${id}`);
+        const content = document.getElementById(`edit-content-${id}`);
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+          backdrop.classList.remove('opacity-0');
+          backdrop.classList.add('opacity-100');
+          content.classList.remove('opacity-0', 'scale-95');
+          content.classList.add('opacity-100', 'scale-100');
+        }, 10);
+      }
+
+      function closeEditModal(id) {
+        const modal = document.getElementById(`edit-modal-${id}`);
+        const backdrop = document.getElementById(`edit-backdrop-${id}`);
+        const content = document.getElementById(`edit-content-${id}`);
+        backdrop.classList.remove('opacity-100');
+        backdrop.classList.add('opacity-0');
+        content.classList.remove('opacity-100', 'scale-100');
+        content.classList.add('opacity-0', 'scale-95');
+        setTimeout(() => {
+          modal.classList.add('hidden');
+        }, 200);
+      }
+
+      function toggleEditFields(id) {
+        const type = document.getElementById(`edit-itemType-${id}`).value;
+        const inventarisFields = document.getElementById(`edit-inventaris-fields-${id}`);
+        const bhpFields = document.getElementById(`edit-bhp-fields-${id}`);
+        const categoryInput = document.getElementById(`edit-category-${id}`);
+        const unitInput = document.getElementById(`edit-unit-${id}`);
+        
+        if (type === 'inventaris') {
+          inventarisFields.classList.remove('hidden');
+          bhpFields.classList.add('hidden');
+          categoryInput.setAttribute('required', 'required');
+          unitInput.removeAttribute('required');
+        } else if (type === 'bhp') {
+          inventarisFields.classList.add('hidden');
+          bhpFields.classList.remove('hidden');
+          categoryInput.removeAttribute('required');
+          unitInput.setAttribute('required', 'required');
+        }
+      }

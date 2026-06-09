@@ -24,6 +24,28 @@ block content
       button(type="submit" class="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 active:bg-blue-800 transition font-semibold text-sm shadow-sm")
         | + Buat Draf Baru
 
+  //- Filter Form
+  .bg-white.rounded-xl.shadow-sm.border.border-gray-100.p-4.mb-6
+    form(action="/procurement" method="GET" class="flex flex-wrap items-center gap-4")
+      .flex.flex-col.gap-1.min-w-40
+        label(for="filter-year").text-xs.font-semibold.text-gray-500 Filter Tahun
+        select(name="year" id="filter-year" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition")
+          option(value="") -- Semua Tahun --
+          each yr in years
+            option(value=yr selected=(selectedYear === yr.toString()))= yr
+
+      .flex.flex-col.gap-1.min-w-40
+        label(for="filter-month").text-xs.font-semibold.text-gray-500 Filter Bulan
+        select(name="month" id="filter-month" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition")
+          option(value="") -- Semua Bulan --
+          - const months = [{v:'1',n:'Januari'}, {v:'2',n:'Februari'}, {v:'3',n:'Maret'}, {v:'4',n:'April'}, {v:'5',n:'Mei'}, {v:'6',n:'Juni'}, {v:'7',n:'Juli'}, {v:'8',n:'Agustus'}, {v:'9',n:'September'}, {v:'10',n:'Oktober'}, {v:'11',n:'November'}, {v:'12',n:'Desember'}]
+          each m in months
+            option(value=m.v selected=(selectedMonth === m.v))= m.n
+
+      .flex.items-end.gap-2.h-full.pt-5
+        button(type="submit" class="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-4 py-1.5 rounded-lg text-sm font-semibold transition shadow-sm") Filter
+        a(href="/procurement" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-1.5 rounded-lg text-sm font-semibold transition border border-gray-200") Reset
+
   //- Table
   .bg-white.rounded-xl.shadow-sm.border.border-gray-100.overflow-hidden
     .overflow-x-auto
@@ -62,8 +84,16 @@ block content
                         | Lihat Detail
                     else
                       +warningButton('Edit / Kelola', `/procurement/${draft.id}`)
-                      form.inline(action=`/procurement/${draft.id}/delete` method="POST")
-                        +dangerButton('Hapus')
+                      if draft.procurementDetails.length === 0
+                        form(id=`form-del-${draft.id}` action=`/procurement/${draft.id}/delete` method="POST" class="inline-block")
+                          button(
+                            type="button"
+                            class="inline-flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 active:bg-red-800 transition font-semibold text-sm shadow-sm"
+                            onclick=`customConfirm('Apakah Anda yakin ingin menghapus draf #PR-${draft.id.toString().padStart(4, '0')}?', { okText: 'Ya, Hapus', title: 'Hapus Draf' }).then(function(c){ if(c) document.getElementById('form-del-${draft.id}').submit(); });`
+                          ) Hapus
+                      else
+                        span(class="inline-flex items-center gap-2 bg-gray-200 text-gray-400 px-4 py-2 rounded-lg font-semibold text-sm cursor-not-allowed" title="Hapus item di dalam draf terlebih dahulu sebelum menghapus draf")
+                          | Hapus
           else
             tr
               td.px-6.py-8.text-center.text-gray-400(colspan="5")
