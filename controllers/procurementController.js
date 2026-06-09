@@ -13,7 +13,10 @@ const formatRupiah = (amount) => {
  */
 export const index = async (req, res) => {
   try {
-    const drafts = await prisma.procurementDraft.findMany({
+    const { year, month } = req.query
+
+    // Fetch all drafts for this user first
+    const allDrafts = await prisma.procurementDraft.findMany({
       where: { userId: req.session.user.id },
       orderBy: { date: 'desc' },
       include: {
@@ -21,11 +24,32 @@ export const index = async (req, res) => {
       },
     })
 
+    // Filter in JS
+    let filteredDrafts = allDrafts
+    if (year) {
+      const yearInt = parseInt(year, 10)
+      if (!isNaN(yearInt)) {
+        filteredDrafts = filteredDrafts.filter(d => d.date.getFullYear() === yearInt)
+      }
+    }
+    if (month) {
+      const monthInt = parseInt(month, 10)
+      if (!isNaN(monthInt) && monthInt >= 1 && monthInt <= 12) {
+        filteredDrafts = filteredDrafts.filter(d => (d.date.getMonth() + 1) === monthInt)
+      }
+    }
+
+    // Extract unique years from all drafts of this user
+    const years = [...new Set(allDrafts.map(d => d.date.getFullYear()))].sort((a, b) => b - a)
+
     res.render('procurement/index', {
       title: 'Pengadaan Barang',
       user: res.locals.user,
       currentPath: '/procurement',
-      drafts,
+      drafts: filteredDrafts,
+      years,
+      selectedYear: year || '',
+      selectedMonth: month || '',
       formatRupiah,
       success: req.session.flash?.success ?? null,
       error: req.session.flash?.error ?? null,
@@ -327,6 +351,153 @@ export const removeItem = async (req, res) => {
 }
 
 /**
+ * POST /procurement/:id/items/:detailId/edit
+ * Update an item details in the procurement draft.
+ */
+export const updateItem = async (req, res) => {
+  const draftId = parseInt(req.params.id, 10)
+  const detailId = parseInt(req.params.detailId, 10)
+
+  if (isNaN(draftId) || isNaN(detailId)) {
+    req.session.flash = { error: 'ID tidak valid.' }
+    return res.redirect('/procurement')
+  }
+
+  const { name, price, quantity, link, itemType, category, replacedInventoryId, unit } = req.body
+
+  const nameTrimmed = name?.trim() || ''
+  const linkTrimmed = link?.trim() || ''
+  const unitTrimmed = unit?.trim() || ''
+  const priceParsed = parseFloat(price)
+  const quantityParsed = parseInt(quantity, 10)
+
+  if (!nameTrimmed || isNaN(priceParsed) || priceParsed <= 0 || isNaN(quantityParsed) || quantityParsed <= 0 || !linkTrimmed || !itemType) {
+    req.session.flash = { error: 'Semua field wajib diisi dengan benar.' }
+    return res.redirect(`/procurement/${draftId}`)
+  }
+
+  try {
+    // Verify draft ownership and status
+    const draft = await prisma.procurementDraft.findUnique({ where: { id: draftId } })
+    if (!draft || draft.userId !== req.session.user.id) {
+      req.session.flash = { error: 'Draf tidak ditemukan atau Anda tidak memiliki akses.' }
+      return res.redirect('/procurement')
+    }
+
+    if (draft.status === 'LOCKED') {
+      req.session.flash = { error: 'Draf telah dikunci dan tidak dapat diubah lagi.' }
+      return res.redirect(`/procurement/${draftId}`)
+    }
+
+    // Verify detail belongs to this draft
+    const detail = await prisma.procurementDetail.findUnique({
+      where: { id: detailId },
+      include: {
+        item: {
+          include: {
+            consumable: true,
+          },
+        },
+      },
+    })
+
+    if (!detail || detail.draftId !== draftId) {
+      req.session.flash = { error: 'Item tidak ditemukan di draf ini.' }
+      return res.redirect(`/procurement/${draftId}`)
+    }
+
+    let finalCategory = 'NON_ELECTRONICS'
+    let dbReplacedInventoryId = null
+
+    if (itemType === 'inventaris') {
+      if (!category || !['ELECTRONICS', 'NON_ELECTRONICS'].includes(category)) {
+        req.session.flash = { error: 'Kategori inventaris tidak valid.' }
+        return res.redirect(`/procurement/${draftId}`)
+      }
+      finalCategory = category
+
+      if (replacedInventoryId) {
+        const repId = parseInt(replacedInventoryId, 10)
+        if (!isNaN(repId)) {
+          const invExists = await prisma.inventory.findUnique({ where: { id: repId } })
+          if (!invExists) {
+            req.session.flash = { error: 'Barang inventaris pengganti tidak ditemukan.' }
+            return res.redirect(`/procurement/${draftId}`)
+          }
+          dbReplacedInventoryId = repId
+        }
+      }
+    } else if (itemType === 'bhp') {
+      if (!unitTrimmed) {
+        req.session.flash = { error: 'Satuan BHP wajib diisi.' }
+        return res.redirect(`/procurement/${draftId}`)
+      }
+    } else {
+      req.session.flash = { error: 'Tipe item tidak valid.' }
+      return res.redirect(`/procurement/${draftId}`)
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Update item fields
+      await tx.item.update({
+        where: { id: detail.itemId },
+        data: {
+          name: nameTrimmed,
+          category: finalCategory,
+          price: BigInt(priceParsed),
+          link: linkTrimmed,
+        },
+      })
+
+      // 2. Manage consumable transition
+      if (itemType === 'bhp') {
+        if (detail.item.consumable) {
+          await tx.consumable.update({
+            where: { id: detail.item.consumable.id },
+            data: {
+              name: nameTrimmed,
+              unit: unitTrimmed,
+            },
+          })
+        } else {
+          await tx.consumable.create({
+            data: {
+              name: nameTrimmed,
+              unit: unitTrimmed,
+              stock: 0,
+              itemId: detail.itemId,
+            },
+          })
+        }
+      } else {
+        // If it was BHP previously but now Inventaris, delete consumable record
+        if (detail.item.consumable) {
+          await tx.consumable.delete({ where: { id: detail.item.consumable.id } })
+        }
+      }
+
+      // 3. Update procurement detail
+      await tx.procurementDetail.update({
+        where: { id: detailId },
+        data: {
+          quantity: quantityParsed,
+          price: BigInt(quantityParsed * priceParsed),
+          replacedInventoryId: dbReplacedInventoryId,
+        },
+      })
+    })
+
+    req.session.flash = { success: `Item "${nameTrimmed}" berhasil diperbarui.` }
+    res.redirect(`/procurement/${draftId}`)
+  } catch (err) {
+    console.error('Procurement updateItem error:', err)
+    req.session.flash = { error: 'Gagal memperbarui item.' }
+    res.redirect(`/procurement/${draftId}`)
+  }
+}
+
+
+/**
  * POST /procurement/:id/lock
  * Finalize/lock a procurement draft.
  */
@@ -434,3 +605,96 @@ export const destroy = async (req, res) => {
     res.redirect(`/procurement/${draftId}`)
   }
 }
+
+/**
+ * GET /procurement/inventory
+ * Display list of Inventories & BHP (Consumables) for LAB_HEAD with filters.
+ */
+export const inventoryIndex = async (req, res) => {
+  try {
+    const { search, type, condition, category, room } = req.query
+
+    // 1. Fetch filter options (rooms)
+    const rooms = await prisma.room.findMany({ orderBy: { name: 'asc' } })
+
+    let inventories = []
+    let consumables = []
+
+    // Build filters for Inventory
+    const invWhere = {}
+    if (search) {
+      invWhere.item = {
+        name: { contains: search }
+      }
+    }
+    if (condition) {
+      invWhere.condition = condition
+    }
+    if (category) {
+      if (!invWhere.item) invWhere.item = {}
+      invWhere.item.category = category
+    }
+    if (room) {
+      invWhere.roomId = room
+    }
+
+    // Build filters for Consumable
+    const consWhere = {}
+    if (search) {
+      consWhere.name = { contains: search }
+    }
+    if (category) {
+      consWhere.item = {
+        category: category
+      }
+    }
+
+    // Load data based on requested type filter
+    if (!type || type === 'all' || type === 'inventaris') {
+      inventories = await prisma.inventory.findMany({
+        where: invWhere,
+        include: {
+          item: true,
+          room: true,
+        },
+        orderBy: {
+          qrCode: 'asc',
+        },
+      })
+    }
+
+    if (!type || type === 'all' || type === 'bhp') {
+      consumables = await prisma.consumable.findMany({
+        where: consWhere,
+        include: {
+          item: true,
+        },
+        orderBy: {
+          name: 'asc',
+        },
+      })
+    }
+
+    res.render('procurement/inventory', {
+      title: 'Daftar Inventaris & BHP',
+      user: res.locals.user,
+      currentPath: '/procurement/inventory',
+      inventories,
+      consumables,
+      rooms,
+      search: search || '',
+      selectedType: type || 'all',
+      selectedCondition: condition || '',
+      selectedCategory: category || '',
+      selectedRoom: room || '',
+    })
+  } catch (err) {
+    console.error('Procurement inventoryIndex error:', err)
+    res.status(500).render('error', {
+      title: 'Kesalahan Server',
+      message: 'Gagal memuat daftar inventaris dan BHP.',
+      statusCode: 500,
+    })
+  }
+}
+

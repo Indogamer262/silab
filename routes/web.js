@@ -3,6 +3,7 @@ import { showLogin, processLogin, logout } from '../controllers/authController.j
 import * as userController from '../controllers/userController.js'
 import * as roomController from '../controllers/roomController.js'
 import * as procurementController from '../controllers/procurementController.js'
+import * as staffController from '../controllers/staffController.js'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 
 const router = express.Router()
@@ -50,10 +51,18 @@ router.post('/admin/rooms/:id/delete', requireAuth, requireRole('ADMIN'), roomCo
 // ─── Kepala Lab: Pengadaan Barang ─────────────────────────────────────────────
 router.get('/procurement', requireAuth, requireRole('LAB_HEAD'), procurementController.index)
 router.post('/procurement', requireAuth, requireRole('LAB_HEAD'), procurementController.store)
+router.get('/procurement/inventory', requireAuth, requireRole('LAB_HEAD'), procurementController.inventoryIndex)
 router.get('/procurement/:id', requireAuth, requireRole('LAB_HEAD'), procurementController.show)
 router.post('/procurement/:id/lock', requireAuth, requireRole('LAB_HEAD'), procurementController.lock)
 router.post('/procurement/:id/items', requireAuth, requireRole('LAB_HEAD'), procurementController.addItem)
 router.post('/procurement/:id/items/:detailId/delete', requireAuth, requireRole('LAB_HEAD'), procurementController.removeItem)
+router.post('/procurement/:id/items/:detailId/edit', requireAuth, requireRole('LAB_HEAD'), procurementController.updateItem)
 router.post('/procurement/:id/delete', requireAuth, requireRole('LAB_HEAD'), procurementController.destroy)
+
+// ─── Staf Laboratorium: Pengelolaan & Maintenance ─────────────────────────────
+router.get('/staff/bhp', requireAuth, requireRole('LAB_STAFF'), staffController.bhpIndex)
+router.post('/staff/bhp/update-stock', requireAuth, requireRole('LAB_STAFF'), staffController.updateBhpStock)
+router.get('/staff/maintenance', requireAuth, requireRole('LAB_STAFF'), staffController.maintenanceIndex)
+router.post('/staff/maintenance/log', requireAuth, requireRole('LAB_STAFF'), staffController.storeMaintenanceLog)
 
 export default router
