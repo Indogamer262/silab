@@ -1,0 +1,214 @@
+extends ../../layouts/loggedin
+include ../../components/_form-components
+
+block content
+  //- Flash Messages
+  if success
+    .bg-green-50.border.border-green-300.text-green-800.px-4.py-3.rounded-lg.mb-6.flex.items-center.gap-3(role="alert")
+      svg.w-5.h-5.flex-shrink-0(fill="currentColor" viewBox="0 0 20 20")
+        path(fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd")
+      span= success
+
+  if error
+    .bg-red-50.border.border-red-300.text-red-800.px-4.py-3.rounded-lg.mb-6.flex.items-center.gap-3(role="alert")
+      svg.w-5.h-5.flex-shrink-0(fill="currentColor" viewBox="0 0 20 20")
+        path(fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd")
+      span= error
+
+  //- Navigation & Header
+  .flex.items-center.gap-2.text-sm.text-gray-500.mb-4
+    a(href="/admin-staff/procurements" class="hover:text-blue-600 transition") Penerimaan Pengadaan
+    span &gt;
+    span.text-gray-800 Penerimaan Draf
+
+  .grid.grid-cols-1(class="lg:grid-cols-3").gap-6.mb-6
+    //- Left Card: Info Draf
+    .col-span-2.bg-white.p-6.rounded-xl.shadow-sm.border.border-gray-100
+      h4.text-lg.font-bold.text-gray-800.mb-4 Informasi Draf Pengadaan
+      .grid.grid-cols-2.gap-4.text-sm
+        div
+          p.text-xs.text-gray-400 ID Draf
+          p.font-mono.font-semibold.text-gray-800= `#PR-${draft.id.toString().padStart(4, '0')}`
+        div
+          p.text-xs.text-gray-400 Tanggal Diajukan
+          p.font-semibold.text-gray-800= draft.date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+        div
+          p.text-xs.text-gray-400 Diajukan Oleh
+          p.font-semibold.text-gray-800= draft.user.name
+        div
+          p.text-xs.text-gray-400 Status Draf
+          span(class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800")
+            | Locked / Diajukan
+
+    //- Right Card: Panduan Penerimaan
+    div(class="bg-gradient-to-br from-blue-800 to-blue-900 p-6 rounded-xl shadow-sm text-white flex flex-col justify-between")
+      div
+        h4.text-lg.font-bold.mb-2 Panduan Penerimaan
+        p.text-xs.text-blue-100.leading-relaxed
+          | Barang yang datang dapat dicatat satu per satu dengan melampirkan Label/QR Code unik. 
+          | Untuk barang bertipe BHP, penerimaan barang akan secara otomatis menambahkan stok BHP yang tersedia.
+      div(class="mt-4 bg-blue-950 bg-opacity-40 p-2.5 rounded border border-blue-700 text-center text-xs")
+        a(href="/admin-staff/procurements" class="font-semibold text-blue-200 hover:text-white transition") &larr; Kembali ke Daftar
+
+  //- List Items
+  .bg-white.rounded-xl.shadow-sm.border.border-gray-100.overflow-hidden
+    .p-6.border-b.border-gray-100
+      h4.text-lg.font-bold.text-gray-800 Daftar Item yang Disetujui
+    .overflow-x-auto
+      table.w-full.text-sm
+        thead
+          tr.bg-gray-50.border-b.border-gray-200
+            th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs No
+            th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Nama Barang
+            th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Tipe / Kategori
+            th.px-6.py-3.text-center.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Qty Diminta
+            th.px-6.py-3.text-center.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Qty Diterima
+            th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Barang Diterima (QR Code)
+            th.px-6.py-3.text-center.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Aksi
+        tbody
+          if acceptedDetails && acceptedDetails.length > 0
+            each detail, index in acceptedDetails
+              - const receivedCount = detail.item.inventories.length
+              tr(class="border-b border-gray-100 hover:bg-gray-50 transition")
+                td.px-6.py-4.text-gray-500= index + 1
+                td.px-6.py-4
+                  p.font-semibold.text-gray-900= detail.item.name
+                td.px-6.py-4
+                  if detail.item.consumable
+                    span(class="inline-block px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded-full font-medium")
+                      | BHP (Satuan: #{detail.item.consumable.unit})
+                  else
+                    span(class="inline-block px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-full font-medium")
+                      | Inventaris (#{detail.item.category})
+                td.px-6.py-4.text-center.text-gray-800.font-medium= detail.quantity
+                td.px-6.py-4.text-center
+                  span(class=`font-bold ${receivedCount === detail.quantity ? 'text-green-600' : 'text-blue-600'}`)= receivedCount
+                td.px-6.py-4
+                  if detail.item.inventories.length > 0
+                    div(class="flex flex-wrap gap-1.5")
+                      each inv in detail.item.inventories
+                        span(class="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-700 rounded font-mono text-xs" title=`Kondisi: ${inv.condition} | Ruangan: ${inv.room.name}`)
+                          = inv.qrCode
+                  else
+                    span.text-gray-400 Belum ada
+                td.px-6.py-4.text-center
+                  if receivedCount < detail.quantity
+                    button(
+                      type="button"
+                      onclick=`openReceiveModal(${detail.id}, '${detail.item.name.replace(/'/g, "\\'")}')`
+                      class="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-3 py-1.5 rounded-lg transition font-semibold text-xs shadow-sm"
+                    )
+                      | + Terima Barang
+                  else
+                    span(class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800")
+                      svg.w-3.h-3(fill="currentColor" viewBox="0 0 20 20")
+                        path(fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd")
+                      | Lengkap
+          else
+            tr
+              td.px-6.py-8.text-center.text-gray-400(colspan="7")
+                p.text-lg.mb-1 Tidak ada usulan barang yang berstatus disetujui (ACCEPTED) dalam draf ini.
+
+  //- Receive Modal
+  div(id="receive-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden")
+    // backdrop
+    div(class="fixed inset-0 bg-gray-900 bg-opacity-50 transition-opacity duration-200 opacity-0" id="receive-backdrop" onclick="closeReceiveModal()")
+    // modal content
+    div(class="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 relative z-10 mx-4 transform transition-all scale-95 duration-200 opacity-0" id="receive-content")
+      .flex.items-center.justify-between.mb-4.pb-3.border-b
+        h3#modal-title.text-lg.font-bold.text-gray-800 Terima Barang
+        button(type="button" class="text-gray-400 hover:text-gray-600 transition" onclick="closeReceiveModal()")
+          svg.w-6.h-6(fill="none" stroke="currentColor" viewBox="0 0 24 24")
+            path(stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12")
+      
+      form(id="receive-form" method="POST" class="space-y-4")
+        //- Label/QR Code
+        .flex.flex-col.gap-1
+          label(for="qrCode").font-medium.text-gray-700.text-sm Label / QR Code Unik
+          input(
+            type="text"
+            name="qrCode"
+            id="qrCode"
+            required
+            placeholder="Contoh: LAB-KOM-001"
+            class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition font-mono uppercase"
+          )
+          p.text-xs.text-gray-400 Pastikan label ini belum digunakan oleh aset lain di laboratorium.
+
+        .grid.grid-cols-2.gap-4
+          //- Room Selection
+          .flex.flex-col.gap-1
+            label(for="roomId").font-medium.text-gray-700.text-sm Penempatan Ruangan
+            select(
+              name="roomId"
+              id="roomId"
+              required
+              class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white"
+            )
+              option(value="" disabled selected) -- Pilih Ruang --
+              each room in rooms
+                option(value=room.id)= room.name
+
+          //- Condition
+          .flex.flex-col.gap-1
+            label(for="condition").font-medium.text-gray-700.text-sm Kondisi Barang
+            select(
+              name="condition"
+              id="condition"
+              required
+              class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white"
+            )
+              option(value="GOOD" selected) Baik (GOOD)
+              option(value="FAIR") Cukup (FAIR)
+              option(value="POOR") Buruk (POOR)
+              option(value="BROKEN") Rusak (BROKEN)
+
+        //- Received Date
+        .flex.flex-col.gap-1
+          label(for="receivedDate").font-medium.text-gray-700.text-sm Tanggal Penerimaan
+          input(
+            type="date"
+            name="receivedDate"
+            id="receivedDate"
+            required
+            value=new Date().toISOString().split('T')[0]
+            class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+          )
+
+        .pt-4.border-t.border-gray-100.flex.justify-end.gap-2
+          button(type="button" class="border border-gray-300 text-gray-700 px-5 py-2.5 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition font-semibold text-sm" onclick="closeReceiveModal()") Batal
+          button(type="submit" class="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 active:bg-blue-800 transition font-semibold text-sm shadow-sm") Simpan Penerimaan
+
+  script.
+    function openReceiveModal(detailId, itemName) {
+      const modal = document.getElementById('receive-modal');
+      const backdrop = document.getElementById('receive-backdrop');
+      const content = document.getElementById('receive-content');
+      const title = document.getElementById('modal-title');
+      const form = document.getElementById('receive-form');
+      
+      title.textContent = `Terima Barang: ${itemName}`;
+      form.action = `/admin-staff/procurements/${#{draft.id}}/receive/${detailId}`;
+      
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+        backdrop.classList.remove('opacity-0');
+        backdrop.classList.add('opacity-100');
+        content.classList.remove('opacity-0', 'scale-95');
+        content.classList.add('opacity-100', 'scale-100');
+      }, 10);
+    }
+
+    function closeReceiveModal() {
+      const modal = document.getElementById('receive-modal');
+      const backdrop = document.getElementById('receive-backdrop');
+      const content = document.getElementById('receive-content');
+      
+      backdrop.classList.remove('opacity-100');
+      backdrop.classList.add('opacity-0');
+      content.classList.remove('opacity-100', 'scale-100');
+      content.classList.add('opacity-0', 'scale-95');
+      setTimeout(() => {
+        modal.classList.add('hidden');
+      }, 200);
+    }
