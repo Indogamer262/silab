@@ -1,5 +1,5 @@
 import express from 'express'
-import { showLogin, processLogin, logout } from '../controllers/authController.js'
+import { showLogin, processLogin, logout, changePassword } from '../controllers/authController.js'
 import * as userController from '../controllers/userController.js'
 import * as roomController from '../controllers/roomController.js'
 import * as procurementController from '../controllers/procurementController.js'
@@ -13,7 +13,7 @@ router.use(express.urlencoded({ extended: false }))
 // ─── Halaman Utama ────────────────────────────────────────────────────────────
 router.get('/', (req, res) => {
     if (req.session.user) {
-        return res.redirect('/dashboard')
+        return res.redirect('/profile')
     }
     res.render('index', { title: 'Selamat Datang' })
 })
@@ -24,13 +24,18 @@ router.post('/login', processLogin)
 router.post('/logout', requireAuth, logout)
 
 // ─── Route Terproteksi ────────────────────────────────────────────────────────
-router.get('/dashboard', requireAuth, (req, res) => {
-    res.render('dashboard', {
-        title: 'Dashboard',
+router.get('/profile', requireAuth, (req, res) => {
+    res.render('profile', {
+        title: 'Profil',
         user: res.locals.user,
-        currentPath: '/dashboard',
+        currentPath: '/profile',
+        success: req.session.flash?.success ?? null,
+        error: req.session.flash?.error ?? null,
     })
+    delete req.session.flash
 })
+router.post('/change-password', requireAuth, changePassword)
+
 
 // ─── Admin: Kelola Pengguna ───────────────────────────────────────────────────
 router.get('/admin/users', requireAuth, requireRole('ADMIN'), userController.index)
@@ -65,4 +70,4 @@ router.post('/staff/bhp/update-stock', requireAuth, requireRole('LAB_STAFF'), st
 router.get('/staff/maintenance', requireAuth, requireRole('LAB_STAFF'), staffController.maintenanceIndex)
 router.post('/staff/maintenance/log', requireAuth, requireRole('LAB_STAFF'), staffController.storeMaintenanceLog)
 
-export default router
+export default router
