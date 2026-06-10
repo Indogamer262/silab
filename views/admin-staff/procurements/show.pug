@@ -54,44 +54,44 @@ block content
   .bg-white.rounded-xl.shadow-sm.border.border-gray-100.overflow-hidden
     .p-6.border-b.border-gray-100
       h4.text-lg.font-bold.text-gray-800 Daftar Item yang Disetujui
-    .overflow-x-auto
-      table.w-full.text-sm
+    .overflow-x-auto.w-full.min-w-0
+      table.w-full.text-sm.min-w-max
         thead
           tr.bg-gray-50.border-b.border-gray-200
-            th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs No
-            th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Nama Barang
-            th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Tipe / Kategori
-            th.px-6.py-3.text-center.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Qty Diminta
-            th.px-6.py-3.text-center.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Qty Diterima
-            th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Barang Diterima (QR Code)
-            th.px-6.py-3.text-center.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Aksi
+            th.px-4.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs(class="w-12") No
+            th.px-4.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs(class="w-64") Nama Barang
+            th.px-4.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs(class="w-40") Tipe / Kategori
+            th.px-4.py-3.text-center.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs(class="w-24") Qty Diminta
+            th.px-4.py-3.text-center.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs(class="w-24") Qty Diterima
+            th.px-4.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs(class="w-96") Barang Diterima (QR Code)
+            th.px-4.py-3.text-center.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs(class="w-40") Aksi
         tbody
           if acceptedDetails && acceptedDetails.length > 0
             each detail, index in acceptedDetails
               - const receivedCount = detail.item.inventories.length
               tr(class="border-b border-gray-100 hover:bg-gray-50 transition")
-                td.px-6.py-4.text-gray-500= index + 1
-                td.px-6.py-4
+                td.px-4.py-4.text-gray-500= index + 1
+                td.px-4.py-4
                   p.font-semibold.text-gray-900= detail.item.name
-                td.px-6.py-4
+                td.px-4.py-4
                   if detail.item.consumable
                     span(class="inline-block px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded-full font-medium")
                       | BHP (Satuan: #{detail.item.consumable.unit})
                   else
                     span(class="inline-block px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-full font-medium")
                       | Inventaris (#{detail.item.category})
-                td.px-6.py-4.text-center.text-gray-800.font-medium= detail.quantity
-                td.px-6.py-4.text-center
+                td.px-4.py-4.text-center.text-gray-800.font-medium= detail.quantity
+                td.px-4.py-4.text-center
                   span(class=`font-bold ${receivedCount === detail.quantity ? 'text-green-600' : 'text-blue-600'}`)= receivedCount
-                td.px-6.py-4
+                td.px-4.py-4
                   if detail.item.inventories.length > 0
                     div(class="flex flex-wrap gap-1.5")
                       each inv in detail.item.inventories
-                        span(class="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-700 rounded font-mono text-xs" title=`Kondisi: ${inv.condition} | Ruangan: ${inv.room.name}`)
+                        span(class="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-700 rounded font-mono text-xs whitespace-nowrap" title=`Kondisi: ${inv.condition} | Ruangan: ${inv.room.name}`)
                           = inv.qrCode
                   else
                     span.text-gray-400 Belum ada
-                td.px-6.py-4.text-center
+                td.px-4.py-4.text-center
                   if receivedCount < detail.quantity
                     button(
                       type="button"

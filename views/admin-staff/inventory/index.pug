@@ -55,12 +55,33 @@ block content
         button(type="submit" class="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-4 py-1.5 rounded-lg text-sm font-semibold transition shadow-sm") Filter
         a(href="/admin-staff/inventory" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-1.5 rounded-lg text-sm font-semibold transition border border-gray-200") Reset
 
+  //- Selection Action Bar (floating at bottom)
+  div(id="selection-bar" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 hidden")
+    div(class="bg-gray-900 text-white pl-5 pr-3 py-3 rounded-2xl flex items-center gap-5 shadow-2xl border border-gray-700")
+      .flex.items-center.gap-2
+        div(class="bg-blue-500 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold" id="selection-count") 0
+        span.text-sm.font-medium barang dipilih
+      .flex.items-center.gap-2
+        button(type="button" onclick="clearSelection()" class="text-gray-400 hover:text-white px-3 py-1.5 rounded-lg text-sm font-medium transition hover:bg-gray-800") Batal
+        button(type="button" onclick="printSelectedQR()" class="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-4 py-1.5 rounded-lg text-sm font-semibold transition flex items-center gap-2 shadow-sm")
+          svg.w-4.h-4(fill="none" stroke="currentColor" viewBox="0 0 24 24")
+            path(stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z")
+          | Cetak QR Label
+
   //- Table
   .bg-white.rounded-xl.shadow-sm.border.border-gray-100.overflow-hidden
     .overflow-x-auto
       table.w-full.text-sm
         thead
           tr.bg-gray-50.border-b.border-gray-200
+            th.px-4.py-3.text-center(style="width:40px")
+              input(
+                type="checkbox"
+                id="select-all"
+                class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                onchange="toggleSelectAll(this)"
+                title="Pilih semua di halaman ini"
+              )
             th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs QR Code / Label
             th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs QR Visual
             th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Nama Barang
@@ -71,14 +92,23 @@ block content
         tbody
           if inventories && inventories.length > 0
             each inv in inventories
-              tr(class="border-b border-gray-100 hover:bg-gray-50 transition")
+              tr(class="border-b border-gray-100 hover:bg-gray-50 transition" data-inv-id=inv.id)
+                td.px-4.py-4.text-center
+                  input(
+                    type="checkbox"
+                    class="inv-checkbox w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    data-id=inv.id
+                    data-qr=inv.qrCode
+                    data-name=inv.item.name
+                    onchange="toggleSelection(this)"
+                  )
                 td.px-6.py-4.font-mono.text-gray-700.font-semibold= inv.qrCode
                 td.px-6.py-4
                   img(
                     src=`https://api.qrserver.com/v1/create-qr-code/?size=48x48&data=${encodeURIComponent(inv.qrCode)}`
                     alt=inv.qrCode
                     class="w-12 h-12 border border-gray-200 rounded p-0.5 bg-white shadow-sm hover:scale-125 transition cursor-pointer"
-                    onclick=`viewLargeQR('${inv.qrCode}', '${inv.item.name.replace(/'/g, "\\'")}')`
+                    onclick=`viewLargeQR('${inv.qrCode}', '${inv.item.name.replace(/'/g, "\\\\'")}')`
                     title="Perbesar QR Code"
                   )
                 td.px-6.py-4
@@ -106,16 +136,6 @@ block content
                       href=`/admin-staff/inventory/${inv.id}/edit`
                       class="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white px-3 py-1.5 rounded-lg transition font-semibold text-xs shadow-sm"
                     ) Edit Label
-                    button(
-                      type="button"
-                      onclick=`viewLargeQR('${inv.qrCode}', '${inv.item.name.replace(/'/g, "\\'")}')`
-                      class="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-3 py-1.5 rounded-lg transition font-semibold text-xs shadow-sm"
-                    ) Cetak/QR
-          else
-            tr
-              td.px-6.py-8.text-center.text-gray-400(colspan="7")
-                p.text-lg.mb-1 Belum ada data inventaris yang cocok.
-
   //- QR Detail Modal
   div(id="qr-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden")
     // backdrop
@@ -133,18 +153,72 @@ block content
         span#qr-modal-label.font-mono.text-lg.font-bold.text-gray-800
         p#qr-modal-desc.text-xs.text-gray-500.mt-1
 
-      .flex.justify-center.gap-2
+      .flex.justify-center
         button(type="button" class="border border-gray-300 text-gray-700 px-5 py-2 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition font-semibold text-sm" onclick="closeQRModal()") Tutup
-        button(type="button" id="download-qr-btn" class="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 active:bg-blue-800 transition font-semibold text-sm shadow-sm flex items-center gap-2" onclick="downloadQR()")
-          svg.w-4.h-4(fill="none" stroke="currentColor" viewBox="0 0 24 24")
-            path(stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4")
-          | Download QR
 
-  script.
+  script(type="module").
+    import { getSelection, saveSelection, clearSelection, toggleSelection, toggleSelectAll } from '/js/selection.js';
+    import { printSelectedQR } from '/js/print.js';
+
+    // Make functions available globally for inline onclick attributes
+    window.toggleSelection = (checkbox) => {
+      toggleSelection(checkbox.dataset.id, checkbox.dataset.qr, checkbox.dataset.name, checkbox.checked);
+      updateSelectionUI();
+    };
+
+    window.toggleSelectAll = (masterCheckbox) => {
+      const allBoxes = document.querySelectorAll('.inv-checkbox');
+      toggleSelectAll(masterCheckbox.checked, allBoxes);
+      updateSelectionUI();
+    };
+
+    window.clearSelection = () => {
+      clearSelection();
+      updateSelectionUI();
+    };
+
+    window.printSelectedQR = () => {
+      const sel = getSelection();
+      printSelectedQR(Object.values(sel));
+    };
+
+    function updateSelectionUI() {
+      const sel = getSelection();
+      const count = Object.keys(sel).length;
+      const bar = document.getElementById('selection-bar');
+      const badge = document.getElementById('selection-count');
+
+      if (count > 0) {
+        bar.classList.remove('hidden');
+        badge.textContent = count;
+      } else {
+        bar.classList.add('hidden');
+      }
+
+      // Sync checkboxes with stored selection
+      document.querySelectorAll('.inv-checkbox').forEach(cb => {
+        cb.checked = !!sel[cb.dataset.id];
+      });
+
+      // Update select-all state
+      const allBoxes = document.querySelectorAll('.inv-checkbox');
+      const selectAll = document.getElementById('select-all');
+      if (allBoxes.length > 0) {
+        const allChecked = Array.from(allBoxes).every(cb => cb.checked);
+        const someChecked = Array.from(allBoxes).some(cb => cb.checked);
+        selectAll.checked = allChecked;
+        selectAll.indeterminate = someChecked && !allChecked;
+      }
+    }
+
+    // Restore selection on page load
+    document.addEventListener('DOMContentLoaded', updateSelectionUI);
+
+    // ===== Single QR Modal =====
     let currentQRCode = '';
     let currentQRName = '';
 
-    function viewLargeQR(code, name) {
+    window.viewLargeQR = (code, name) => {
       const modal = document.getElementById('qr-modal');
       const backdrop = document.getElementById('qr-backdrop');
       const content = document.getElementById('qr-content');
@@ -166,9 +240,9 @@ block content
         content.classList.remove('opacity-0', 'scale-95');
         content.classList.add('opacity-100', 'scale-100');
       }, 10);
-    }
+    };
 
-    function closeQRModal() {
+    window.closeQRModal = () => {
       const modal = document.getElementById('qr-modal');
       const backdrop = document.getElementById('qr-backdrop');
       const content = document.getElementById('qr-content');
@@ -180,50 +254,4 @@ block content
       setTimeout(() => {
         modal.classList.add('hidden');
       }, 200);
-    }
-
-    function downloadQR() {
-      const btn = document.getElementById('download-qr-btn');
-      const origHTML = btn.innerHTML;
-      btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Downloading...';
-      btn.disabled = true;
-
-      const padding = 40;
-      const qrSize = 250;
-      const canvasSize = qrSize + (padding * 2);
-
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.src = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(currentQRCode)}&format=png`;
-
-      img.onload = function() {
-        const canvas = document.createElement('canvas');
-        canvas.width = canvasSize;
-        canvas.height = canvasSize;
-        const ctx = canvas.getContext('2d');
-
-        // White background with padding
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, canvasSize, canvasSize);
-
-        // Draw QR code centered
-        ctx.drawImage(img, padding, padding, qrSize, qrSize);
-
-        // Trigger download
-        const link = document.createElement('a');
-        link.download = `QR_${currentQRCode.replace(/[^a-zA-Z0-9-_]/g, '_')}.png`;
-        link.href = canvas.toDataURL('image/png');
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        btn.innerHTML = origHTML;
-        btn.disabled = false;
-      };
-
-      img.onerror = function() {
-        alert('Gagal mengunduh QR Code. Silakan coba lagi.');
-        btn.innerHTML = origHTML;
-        btn.disabled = false;
-      };
-    }
+    };

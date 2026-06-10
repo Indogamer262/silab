@@ -13,8 +13,18 @@ const formatRupiah = (amount) => {
  */
 export const indexProcurements = async (req, res) => {
   try {
+    const { search = '', status = '' } = req.query;
+
     const drafts = await prisma.procurementDraft.findMany({
-      where: { status: 'LOCKED' },
+      where: {
+        status: 'LOCKED',
+        ...(search ? {
+          OR: [
+            { id: isNaN(parseInt(search.replace('#PR-', ''))) ? undefined : parseInt(search.replace('#PR-', '')) },
+            { user: { name: { contains: search, mode: 'insensitive' } } }
+          ].filter(Boolean)
+        } : {})
+      },
       include: {
         user: { select: { name: true } },
         procurementDetails: {
@@ -32,7 +42,7 @@ export const indexProcurements = async (req, res) => {
     })
 
     // Process each draft to calculate item counts and status
-    const processedDrafts = drafts.map(draft => {
+    let processedDrafts = drafts.map(draft => {
       let totalAcceptedQty = 0
       let totalReceivedQty = 0
       let hasAcceptedItems = false
@@ -47,21 +57,26 @@ export const indexProcurements = async (req, res) => {
 
       let statusLabel = 'Belum Diterima'
       let statusColor = 'bg-gray-100 text-gray-800'
+      let statusCode = 'BELUM'
 
       if (hasAcceptedItems) {
         if (totalReceivedQty === 0) {
           statusLabel = 'Menunggu Penerimaan'
           statusColor = 'bg-yellow-100 text-yellow-800'
+          statusCode = 'MENUNGGU'
         } else if (totalReceivedQty < totalAcceptedQty) {
           statusLabel = 'Diterima Sebagian'
           statusColor = 'bg-blue-100 text-blue-800'
+          statusCode = 'SEBAGIAN'
         } else {
           statusLabel = 'Selesai'
           statusColor = 'bg-green-100 text-green-800'
+          statusCode = 'SELESAI'
         }
       } else {
         statusLabel = 'Tidak Ada Barang Disetujui'
         statusColor = 'bg-red-100 text-red-800'
+        statusCode = 'NONE'
       }
 
       return {
@@ -71,14 +86,22 @@ export const indexProcurements = async (req, res) => {
         hasAcceptedItems,
         statusLabel,
         statusColor,
+        statusCode,
       }
     })
+
+    // Filter by status if specified
+    if (status) {
+      processedDrafts = processedDrafts.filter(d => d.statusCode === status);
+    }
 
     res.render('admin-staff/procurements/index', {
       title: 'Penerimaan Pengadaan Barang',
       user: res.locals.user,
       currentPath: '/admin-staff/procurements',
       drafts: processedDrafts,
+      search,
+      status,
       success: req.session.flash?.success ?? null,
       error: req.session.flash?.error ?? null,
     })
