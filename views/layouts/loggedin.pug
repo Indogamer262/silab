@@ -8,8 +8,11 @@ html(lang="id")
     link(rel="stylesheet", href="/css/style.css")
   body.bg-gray-100.min-h-screen.flex.flex-col
     .flex.flex-1.min-h-screen
+      // Sidebar Backdrop for mobile
+      #sidebar-backdrop(class="fixed inset-0 bg-gray-900 bg-opacity-50 z-30 md:hidden hidden")
+      
       // Sidebar
-      aside.w-64.bg-blue-800.text-white.flex-shrink-0.hidden.h-screen.sticky.top-0(class="md:flex flex-col")
+      aside#sidebar.w-64.bg-blue-800.text-white.flex-shrink-0.fixed.inset-y-0.left-0.z-40.transform.-translate-x-full.transition-transform.duration-300.ease-in-out.flex.flex-col(class="md:relative md:translate-x-0 md:h-screen md:sticky md:top-0")
         .p-6.border-b.border-blue-700
           h1.text-2xl.font-bold SILAB
           p.text-xs.text-blue-300 Sistem Inventaris Laboratorium
@@ -54,11 +57,16 @@ html(lang="id")
               span Keluar (Logout)
 
       // Main Content Area
-      .flex-1.flex.flex-col
+      // Header/Navbar also goes here
+      .flex-1.flex.flex-col.w-full(class="min-w-0")
         header.bg-white.shadow-sm.p-4.flex.justify-between.items-center
-          h2.text-xl.font-semibold.text-gray-800= title
+          .flex.items-center.gap-3
+            button#sidebar-toggle(type="button" class="text-gray-600 focus:outline-none md:hidden hover:text-gray-950")
+              svg.w-6.h-6(fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24")
+                path(stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16")
+            h2.text-xl.font-semibold.text-gray-800= title
           .text-sm.text-gray-600 Halo, #[span.font-bold= user.name]
-        main.p-8
+        main.p-4(class="md:p-8")
           block content
 
     //- Custom Confirmation Modal
@@ -130,5 +138,21 @@ html(lang="id")
         });
       };
 
+      document.addEventListener('DOMContentLoaded', () => {
+        const toggleBtn = document.getElementById('sidebar-toggle');
+        const sidebar = document.getElementById('sidebar');
+        const backdrop = document.getElementById('sidebar-backdrop');
 
-
+        if (toggleBtn && sidebar && backdrop) {
+          const toggleSidebar = () => {
+            sidebar.classList.toggle('-translate-x-full');
+            backdrop.classList.toggle('hidden');
+          };
+
+          toggleBtn.addEventListener('click', toggleSidebar);
+          backdrop.addEventListener('click', toggleSidebar);
+        }
+      });
+
+
+
