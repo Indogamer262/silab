@@ -5,6 +5,7 @@ import * as roomController from '../controllers/roomController.js'
 import * as procurementController from '../controllers/procurementController.js'
 import * as staffController from '../controllers/staffController.js'
 import { requireAuth, requireRole } from '../middleware/auth.js'
+import * as adminStaffController from "../controllers/adminStaffController.js";
 
 const router = express.Router()
 
@@ -69,5 +70,13 @@ router.get('/staff/bhp', requireAuth, requireRole('LAB_STAFF'), staffController.
 router.post('/staff/bhp/update-stock', requireAuth, requireRole('LAB_STAFF'), staffController.updateBhpStock)
 router.get('/staff/maintenance', requireAuth, requireRole('LAB_STAFF'), staffController.maintenanceIndex)
 router.post('/staff/maintenance/log', requireAuth, requireRole('LAB_STAFF'), staffController.storeMaintenanceLog)
+
+// ─── Staf Administrasi: Penerimaan & Inventaris ─────────────────────────────
+router.get('/admin-staff/procurements', requireAuth, requireRole('ADMIN_STAFF'), adminStaffController.indexProcurements)
+router.get('/admin-staff/procurements/:id', requireAuth, requireRole('ADMIN_STAFF'), adminStaffController.showProcurement)
+router.post('/admin-staff/procurements/:id/receive/:detailId', requireAuth, requireRole('ADMIN_STAFF'), adminStaffController.receiveItem)
+router.get('/admin-staff/inventory', requireAuth, requireRole('ADMIN_STAFF'), adminStaffController.indexInventory)
+router.get('/admin-staff/inventory/:id/edit', requireAuth, requireRole('ADMIN_STAFF'), adminStaffController.editInventory)
+router.post('/admin-staff/inventory/:id/edit', requireAuth, requireRole('ADMIN_STAFF'), adminStaffController.updateInventory)
 
 export default router
