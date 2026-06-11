@@ -8,3 +8,6 @@ DROP INDEX `room_user_id_fkey` ON `room`;
 ALTER TABLE `room`
     DROP COLUMN `capacity`,
     DROP COLUMN `user_id`;
+
+-- CreateIndex
+CREATE UNIQUE INDEX `room_name_key` ON `room`(`name`);
