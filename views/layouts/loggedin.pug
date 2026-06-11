@@ -19,9 +19,9 @@ html(lang="id")
         
         nav.flex-1.p-4.space-y-1
           a.block.px-4.py-2.rounded.transition.font-semibold(
-            href="/dashboard"
-            class=(currentPath === '/dashboard' ? 'bg-blue-900 text-white' : 'text-blue-200 hover:bg-blue-700 hover:text-white')
-          ) Dashboard
+            href="/profile"
+            class=(currentPath === '/profile' ? 'bg-blue-900 text-white' : 'text-blue-200 hover:bg-blue-700 hover:text-white')
+          ) Profil
           if user
             if user.role === 'ADMIN'
               a.block.px-4.py-2.rounded.transition.font-semibold(
