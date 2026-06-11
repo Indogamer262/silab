@@ -29,22 +29,15 @@ block content
       table.w-full.text-sm
         thead
           tr.bg-gray-50.border-b.border-gray-200
-            th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs ID
             th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Nama Ruangan
-            th.px-6.py-3.text-center.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Kapasitas
             th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Lokasi
-            th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Penanggung Jawab
             th.px-6.py-3.text-center.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Aksi
         tbody
           if rooms && rooms.length > 0
             each room in rooms
               tr.border-b.border-gray-100.hover_bg-gray-50.transition
-                td.px-6.py-4.font-mono.text-gray-700= room.id
                 td.px-6.py-4.font-medium.text-gray-900= room.name
-                td.px-6.py-4.text-center.text-gray-600= room.capacity
                 td.px-6.py-4.text-gray-600= room.location
-                td.px-6.py-4
-                  span.text-gray-800= room.user.name
                 td.px-6.py-4.text-center
                   .flex.items-center.justify-center.gap-2
                     +warningButton('Edit', `/admin/rooms/${room.id}/edit`)
@@ -52,6 +45,6 @@ block content
                       +dangerButton('Hapus')
           else
             tr
-              td.px-6.py-8.text-center.text-gray-400(colspan="6")
+              td.px-6.py-8.text-center.text-gray-400(colspan="3")
                 p.text-lg.mb-1 Belum ada data ruangan
                 p.text-sm Klik "Tambah Ruangan" untuk memulai

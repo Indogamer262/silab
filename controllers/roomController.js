@@ -2,15 +2,12 @@ import prisma from '../lib/prisma.js'
 
 /**
  * GET /admin/rooms
- * List all rooms with their penanggung jawab.
+ * List all rooms.
  */
 export const index = async (req, res) => {
   try {
     const rooms = await prisma.room.findMany({
       orderBy: { name: 'asc' },
-      include: {
-        user: { select: { id: true, name: true } },
-      },
     })
     res.render('admin/room/index', {
       title: 'Kelola Ruangan',
@@ -37,15 +34,10 @@ export const index = async (req, res) => {
  */
 export const create = async (req, res) => {
   try {
-    const users = await prisma.user.findMany({
-      orderBy: { name: 'asc' },
-      select: { id: true, name: true },
-    })
     res.render('admin/room/create', {
       title: 'Tambah Ruangan',
       user: res.locals.user,
       currentPath: '/admin/rooms',
-      users,
       error: req.session.flash?.error ?? null,
       old: req.session.flash?.old ?? {},
     })
@@ -65,35 +57,28 @@ export const create = async (req, res) => {
  * Validate and create a new room.
  */
 export const store = async (req, res) => {
-  const { name, capacity, location, userId } = req.body
+  const { name, location } = req.body
 
   const nameTrimmed = name?.trim() || ''
   const locationTrimmed = location?.trim() || ''
-  const userIdTrimmed = userId?.trim() || ''
 
-  const oldData = { name: nameTrimmed, capacity, location: locationTrimmed, userId: userIdTrimmed }
+  const oldData = { name: nameTrimmed, location: locationTrimmed }
 
-  if (!nameTrimmed || !capacity || !locationTrimmed || !userIdTrimmed) {
+  if (!nameTrimmed || !locationTrimmed) {
     req.session.flash = { error: 'Semua field wajib diisi.', old: oldData }
     return res.redirect('/admin/rooms/create')
   }
 
-  const capacityInt = parseInt(capacity, 10)
-  if (isNaN(capacityInt) || capacityInt <= 0) {
-    req.session.flash = { error: 'Kapasitas harus berupa angka positif (minimal 1).', old: oldData }
-    return res.redirect('/admin/rooms/create')
-  }
-
   try {
-    // Verify user exists
-    const userExists = await prisma.user.findUnique({ where: { id: userIdTrimmed } })
-    if (!userExists) {
-      req.session.flash = { error: 'Penanggung jawab tidak ditemukan.', old: oldData }
+    // Check for duplicate name
+    const existing = await prisma.room.findUnique({ where: { name: nameTrimmed } })
+    if (existing) {
+      req.session.flash = { error: `Ruangan dengan nama "${nameTrimmed}" sudah ada.`, old: oldData }
       return res.redirect('/admin/rooms/create')
     }
 
     await prisma.room.create({
-      data: { name: nameTrimmed, capacity: capacityInt, location: locationTrimmed, userId: userIdTrimmed },
+      data: { name: nameTrimmed, location: locationTrimmed },
     })
 
     req.session.flash = { success: `Ruangan "${nameTrimmed}" berhasil ditambahkan.` }
@@ -112,18 +97,13 @@ export const store = async (req, res) => {
 export const edit = async (req, res) => {
   try {
     const roomId = parseInt(req.params.id, 10)
+
     if (isNaN(roomId)) {
       req.session.flash = { error: 'ID ruangan tidak valid.' }
       return res.redirect('/admin/rooms')
     }
 
-    const [target, users] = await Promise.all([
-      prisma.room.findUnique({ where: { id: roomId } }),
-      prisma.user.findMany({
-        orderBy: { name: 'asc' },
-        select: { id: true, name: true },
-      }),
-    ])
+    const target = await prisma.room.findUnique({ where: { id: roomId } })
 
     if (!target) {
       req.session.flash = { error: 'Ruangan tidak ditemukan.' }
@@ -138,7 +118,6 @@ export const edit = async (req, res) => {
         ...target,
         ...(req.session.flash?.old ?? {}),
       },
-      users,
       error: req.session.flash?.error ?? null,
     })
     delete req.session.flash
@@ -155,41 +134,42 @@ export const edit = async (req, res) => {
  */
 export const update = async (req, res) => {
   const roomId = parseInt(req.params.id, 10)
-  const { name, capacity, location, userId } = req.body
+  const { name, location } = req.body
+
+  const nameTrimmed = name?.trim() || ''
+  const locationTrimmed = location?.trim() || ''
+
+  const oldData = { name: nameTrimmed, location: locationTrimmed }
 
   if (isNaN(roomId)) {
     req.session.flash = { error: 'ID ruangan tidak valid.' }
     return res.redirect('/admin/rooms')
   }
 
-  const nameTrimmed = name?.trim() || ''
-  const locationTrimmed = location?.trim() || ''
-  const userIdTrimmed = userId?.trim() || ''
-
-  const oldData = { name: nameTrimmed, capacity, location: locationTrimmed, userId: userIdTrimmed }
-
-  if (!nameTrimmed || !capacity || !locationTrimmed || !userIdTrimmed) {
+  if (!nameTrimmed || !locationTrimmed) {
     req.session.flash = { error: 'Semua field wajib diisi.', old: oldData }
     return res.redirect(`/admin/rooms/${roomId}/edit`)
   }
 
-  const capacityInt = parseInt(capacity, 10)
-  if (isNaN(capacityInt) || capacityInt <= 0) {
-    req.session.flash = { error: 'Kapasitas harus berupa angka positif (minimal 1).', old: oldData }
-    return res.redirect(`/admin/rooms/${roomId}/edit`)
-  }
-
   try {
-    // Verify user exists
-    const userExists = await prisma.user.findUnique({ where: { id: userIdTrimmed } })
-    if (!userExists) {
-      req.session.flash = { error: 'Penanggung jawab tidak ditemukan.', old: oldData }
-      return res.redirect(`/admin/rooms/${roomId}/edit`)
+    // If name is being changed, check for duplicate
+    const current = await prisma.room.findUnique({ where: { id: roomId } })
+    if (!current) {
+      req.session.flash = { error: 'Ruangan tidak ditemukan.' }
+      return res.redirect('/admin/rooms')
+    }
+
+    if (nameTrimmed !== current.name) {
+      const existing = await prisma.room.findUnique({ where: { name: nameTrimmed } })
+      if (existing) {
+        req.session.flash = { error: `Ruangan dengan nama "${nameTrimmed}" sudah ada.`, old: oldData }
+        return res.redirect(`/admin/rooms/${roomId}/edit`)
+      }
     }
 
     await prisma.room.update({
       where: { id: roomId },
-      data: { name: nameTrimmed, capacity: capacityInt, location: locationTrimmed, userId: userIdTrimmed },
+      data: { name: nameTrimmed, location: locationTrimmed },
     })
 
     req.session.flash = { success: `Ruangan "${nameTrimmed}" berhasil diperbarui.` }
@@ -215,7 +195,7 @@ export const destroy = async (req, res) => {
 
   try {
     // Check for related inventory
-    const inventoryCount = await prisma.inventory.count({ where: { roomId } })
+    const inventoryCount = await prisma.inventory.count({ where: { roomId: roomId } })
     if (inventoryCount > 0) {
       req.session.flash = {
         error: `Tidak dapat menghapus ruangan. Masih memiliki ${inventoryCount} inventaris terkait.`,
