@@ -1,0 +1,94 @@
+extends ../../layouts/loggedin
+
+block content
+  //- Error Flash
+  if error
+    .bg-red-50.border.border-red-300.text-red-800.px-4.py-3.rounded-lg.mb-6.flex.items-center.gap-3(role="alert")
+      svg.w-5.h-5.flex-shrink-0(fill="currentColor" viewBox="0 0 20 20")
+        path(fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd")
+      span= error
+
+  //- Header
+  .mb-6
+    h3.text-2xl.font-bold.text-gray-800 Edit Label &amp; QR Inventaris
+    p.text-sm.text-gray-500.mt-1 Perbarui label/QR Code, lokasi ruangan, dan kondisi untuk barang #[span.font-semibold.text-blue-600= target.item.name]
+
+  .grid.grid-cols-1(class="lg:grid-cols-3").gap-6
+    //- Form Card
+    .col-span-2.bg-white.rounded-xl.shadow-sm.border.border-gray-100.p-8
+      form(action=`/admin-staff/inventory/${target.id}/edit` method="POST" class="space-y-5")
+        //- Label/QR Code
+        .flex.flex-col.gap-1
+          label(for="qrCode").font-semibold.text-gray-700.text-sm Label / QR Code Unik
+          input(
+            type="text"
+            name="qrCode"
+            id="qrCode"
+            value=target.qrCode
+            required
+            placeholder="Contoh: LAB-KOM-001"
+            class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition font-mono uppercase"
+            oninput="updateQRPreview(this.value)"
+          )
+          p.text-xs.text-gray-400 Mengubah label ini akan memodifikasi QR code yang dihasilkan.
+
+        .grid.grid-cols-1(class="md:grid-cols-2").gap-5
+          //- Room Selection
+          .flex.flex-col.gap-1
+            label(for="roomId").font-semibold.text-gray-700.text-sm Penempatan Ruangan
+            select(
+              name="roomId"
+              id="roomId"
+              required
+              class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white"
+            )
+              each room in rooms
+                option(value=room.id selected=(target.roomId === room.id))= room.name
+
+          //- Condition
+          .flex.flex-col.gap-1
+            label(for="condition").font-semibold.text-gray-700.text-sm Kondisi Barang
+            select(
+              name="condition"
+              id="condition"
+              required
+              class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white"
+            )
+              option(value="GOOD" selected=(target.condition === 'GOOD')) Baik (GOOD)
+              option(value="FAIR" selected=(target.condition === 'FAIR')) Cukup (FAIR)
+              option(value="POOR" selected=(target.condition === 'POOR')) Buruk (POOR)
+              option(value="BROKEN" selected=(target.condition === 'BROKEN')) Rusak (BROKEN)
+              option(value="LOST" selected=(target.condition === 'LOST')) Hilang (LOST)
+
+        //- Actions
+        .flex.items-center.gap-3.pt-4.border-t.border-gray-100
+          button(type="submit" class="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-5 py-2.5 rounded-lg transition font-semibold text-sm shadow-sm") Simpan Perubahan
+          a(href="/admin-staff/inventory" class="border border-gray-300 text-gray-700 px-5 py-2.5 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition font-semibold text-sm") Batal
+
+    //- QR Preview Card
+    .bg-white.rounded-xl.shadow-sm.border.border-gray-100.p-6.flex.flex-col.items-center.justify-center.text-center
+      h4.text-sm.font-bold.text-gray-700.mb-4 Preview QR Code Label
+      div.p-4.bg-gray-50.rounded-lg.border.border-gray-100.w-full.flex.flex-col.items-center.justify-center
+        img(
+          id="qr-preview-img"
+          src=`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(target.qrCode)}`
+          alt="QR Preview"
+          class="w-44 h-44 border border-gray-200 rounded p-1 bg-white mb-3 shadow"
+        )
+        span#qr-preview-code.font-mono.text-base.font-bold.text-gray-800= target.qrCode
+      p.text-xs.text-gray-400.mt-4 QR Code di atas diperbarui secara real-time saat Anda mengubah nilai label di form sebelah kiri.
+
+  script.
+    function updateQRPreview(val) {
+      const img = document.getElementById('qr-preview-img');
+      const codeSpan = document.getElementById('qr-preview-code');
+      const cleanVal = val.trim().toUpperCase();
+      
+      if (cleanVal) {
+        img.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(cleanVal)}`;
+        codeSpan.textContent = cleanVal;
+      } else {
+        img.src = '';
+        codeSpan.textContent = '-';
+      }
+    }
