@@ -17,7 +17,7 @@ export const indexProcurements = async (req, res) => {
 
     const drafts = await prisma.procurementDraft.findMany({
       where: {
-        status: 'LOCKED',
+        status: 'FINALIZED',
         ...(search ? {
           OR: [
             { id: isNaN(parseInt(search.replace('#PR-', ''))) ? undefined : parseInt(search.replace('#PR-', '')) },
@@ -154,8 +154,8 @@ export const showProcurement = async (req, res) => {
       return res.redirect('/admin-staff/procurements')
     }
 
-    if (draft.status !== 'LOCKED') {
-      req.session.flash = { error: 'Draf pengadaan belum diajukan.' }
+    if (draft.status !== 'FINALIZED') {
+      req.session.flash = { error: 'Draf pengadaan belum difinalisasi oleh Kaprodi.' }
       return res.redirect('/admin-staff/procurements')
     }
 

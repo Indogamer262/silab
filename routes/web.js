@@ -6,6 +6,7 @@ import * as procurementController from '../controllers/procurementController.js'
 import * as staffController from '../controllers/staffController.js'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import * as adminStaffController from "../controllers/adminStaffController.js";
+import * as prodiHeadController from "../controllers/prodiHeadController.js";
 
 const router = express.Router()
 
@@ -78,5 +79,11 @@ router.post('/admin-staff/procurements/:id/receive/:detailId', requireAuth, requ
 router.get('/admin-staff/inventory', requireAuth, requireRole('ADMIN_STAFF'), adminStaffController.indexInventory)
 router.get('/admin-staff/inventory/:id/edit', requireAuth, requireRole('ADMIN_STAFF'), adminStaffController.editInventory)
 router.post('/admin-staff/inventory/:id/edit', requireAuth, requireRole('ADMIN_STAFF'), adminStaffController.updateInventory)
+
+// ─── Ketua Program Studi: Review Pengadaan ────────────────────────────────────
+router.get('/prodi-head/procurements', requireAuth, requireRole('PRODI_HEAD'), prodiHeadController.indexProcurements)
+router.get('/prodi-head/procurements/:id', requireAuth, requireRole('PRODI_HEAD'), prodiHeadController.showProcurement)
+router.post('/prodi-head/procurements/:id/items/:detailId/review', requireAuth, requireRole('PRODI_HEAD'), prodiHeadController.reviewItem)
+router.post('/prodi-head/procurements/:id/finalize', requireAuth, requireRole('PRODI_HEAD'), prodiHeadController.finalizeDraft)
 
 export default router

@@ -31,6 +31,11 @@ block content
             svg.w-3.h-3(fill="currentColor" viewBox="0 0 20 20")
               path(fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd")
             | Locked / Diajukan
+        else if draft.status === 'FINALIZED'
+          span(class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800")
+            svg.w-3.h-3(fill="currentColor" viewBox="0 0 20 20")
+              path(fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd")
+            | Difinalisasi Kaprodi
         else
           span(class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800")
             svg.w-3.h-3(fill="currentColor" viewBox="0 0 20 20")
@@ -54,7 +59,7 @@ block content
             - totalCost += detail.price
           p.font-bold.text-blue-600.text-base= formatRupiah(totalCost)
 
-      if draft.status !== 'LOCKED'
+      if draft.status === 'DRAFT'
         .mt-6.pt-4.border-t.border-gray-100.flex.gap-2
           form#form-lock(action=`/procurement/${draft.id}/lock` method="POST")
             button(type="button" class="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white px-4 py-2 rounded-lg transition font-semibold text-sm shadow-sm" onclick="customConfirm('Apakah Anda yakin ingin mengunci draf ini? Setelah dikunci, data tidak dapat diubah lagi.', { okText: 'Ya, Kunci', variant: 'warning', title: 'Kunci Draf' }).then(function(c){ if(c) document.getElementById('form-lock').submit(); });")
@@ -94,7 +99,7 @@ block content
             th.px-6.py-3.text-right.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Total Harga
             th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Link Pembelian
             th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Menggantikan
-            if draft.status !== 'LOCKED'
+            if draft.status === 'DRAFT'
               th.px-6.py-3.text-center.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Aksi
         tbody
           if draft.procurementDetails && draft.procurementDetails.length > 0
@@ -126,7 +131,7 @@ block content
                       p.text-gray-400= detail.replacedInventory.room.name
                   else
                     span.text-gray-400 -
-                if draft.status !== 'LOCKED'
+                if draft.status === 'DRAFT'
                   td.px-6.py-4.text-center
                     .flex.items-center.justify-center.gap-2
                       button(
@@ -148,13 +153,13 @@ block content
                           | Hapus
           else
             tr
-              td.px-6.py-8.text-center.text-gray-400(colspan=(draft.status !== 'LOCKED' ? '9' : '8'))
+              td.px-6.py-8.text-center.text-gray-400(colspan=(draft.status === 'DRAFT' ? '9' : '8'))
                 p.text-lg.mb-1 Draf pengadaan ini kosong.
-                if draft.status !== 'LOCKED'
+                if draft.status === 'DRAFT'
                   p.text-sm Isi formulir di bawah ini untuk menambahkan barang.
 
   //- Add Item Form
-  if draft.status !== 'LOCKED'
+  if draft.status === 'DRAFT'
     .bg-white.rounded-xl.shadow-sm.border.border-gray-100.p-6.mb-6
       h4.text-lg.font-bold.text-gray-800.mb-4 + Tambah Item ke Draf
       
@@ -225,7 +230,7 @@ block content
           +primaryButton('+ Tambahkan Item', 'submit')
 
   each detail in draft.procurementDetails
-    if draft.status !== 'LOCKED'
+    if draft.status === 'DRAFT'
       //- Edit Modal
       div(id=`edit-modal-${detail.id}` class="fixed inset-0 z-50 flex items-center justify-center hidden")
         // backdrop
