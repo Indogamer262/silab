@@ -162,15 +162,56 @@ async function main() {
   console.log(`Created ${items.length} items`)
 
   // ──────────────────────────────────────────────
-  // Consumables (linked to some items)
+  // Consumables (BHP) - Dedicated Item parents
   // ──────────────────────────────────────────────
+  const timahSolderItem = await prisma.item.create({
+    data: {
+      name: 'Timah Solder 0.8mm',
+      category: 'ELECTRONICS',
+      price: 150000n,
+      link: 'https://tokopedia.com/timah-solder',
+    },
+  })
+  const kabelJumperItem = await prisma.item.create({
+    data: {
+      name: 'Kabel Jumper Male-Male',
+      category: 'ELECTRONICS',
+      price: 50000n,
+      link: 'https://tokopedia.com/kabel-jumper',
+    },
+  })
+  const resistorKitItem = await prisma.item.create({
+    data: {
+      name: 'Resistor Assortment Kit',
+      category: 'ELECTRONICS',
+      price: 100000n,
+      link: 'https://tokopedia.com/resistor-kit',
+    },
+  })
+  const fluxPastaItem = await prisma.item.create({
+    data: {
+      name: 'Flux Pasta Solder',
+      category: 'ELECTRONICS',
+      price: 45000n,
+      link: 'https://tokopedia.com/flux-pasta',
+    },
+  })
+  const pcbPolosItem = await prisma.item.create({
+    data: {
+      name: 'PCB Polos FR4',
+      category: 'ELECTRONICS',
+      price: 12000n,
+      link: 'https://tokopedia.com/pcb-polos',
+    },
+  })
+
   const consumables = await Promise.all([
     prisma.consumable.create({
       data: {
         name: 'Timah Solder 0.8mm',
         unit: 'roll',
         stock: 50,
-        itemId: items[2].id, // Solder Station
+        itemId: timahSolderItem.id,
       },
     }),
     prisma.consumable.create({
@@ -178,7 +219,7 @@ async function main() {
         name: 'Kabel Jumper Male-Male',
         unit: 'pack',
         stock: 100,
-        itemId: items[6].id, // Breadboard Kit
+        itemId: kabelJumperItem.id,
       },
     }),
     prisma.consumable.create({
@@ -186,7 +227,7 @@ async function main() {
         name: 'Resistor Assortment Kit',
         unit: 'box',
         stock: 30,
-        itemId: items[5].id, // Power Supply DC
+        itemId: resistorKitItem.id,
       },
     }),
     prisma.consumable.create({
@@ -194,7 +235,7 @@ async function main() {
         name: 'Flux Pasta Solder',
         unit: 'botol',
         stock: 25,
-        itemId: items[1].id, // Multimeter
+        itemId: fluxPastaItem.id,
       },
     }),
     prisma.consumable.create({
@@ -202,7 +243,7 @@ async function main() {
         name: 'PCB Polos FR4',
         unit: 'lembar',
         stock: 200,
-        itemId: items[0].id, // Oscilloscope
+        itemId: pcbPolosItem.id,
       },
     }),
   ])
