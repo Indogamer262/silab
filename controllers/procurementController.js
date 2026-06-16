@@ -201,8 +201,8 @@ export const addItem = async (req, res) => {
       return res.redirect('/procurement')
     }
 
-    if (draft.status === 'LOCKED') {
-      req.session.flash = { error: 'Draf telah dikunci dan tidak dapat diubah lagi.' }
+    if (draft.status !== 'DRAFT') {
+      req.session.flash = { error: 'Draf telah diajukan/difinalisasi dan tidak dapat diubah lagi.' }
       return res.redirect(`/procurement/${draftId}`)
     }
 
@@ -305,8 +305,8 @@ export const removeItem = async (req, res) => {
       return res.redirect('/procurement')
     }
 
-    if (draft.status === 'LOCKED') {
-      req.session.flash = { error: 'Draf telah dikunci dan tidak dapat diubah lagi.' }
+    if (draft.status !== 'DRAFT') {
+      req.session.flash = { error: 'Draf telah diajukan/difinalisasi dan tidak dapat diubah lagi.' }
       return res.redirect(`/procurement/${draftId}`)
     }
 
@@ -384,8 +384,8 @@ export const updateItem = async (req, res) => {
       return res.redirect('/procurement')
     }
 
-    if (draft.status === 'LOCKED') {
-      req.session.flash = { error: 'Draf telah dikunci dan tidak dapat diubah lagi.' }
+    if (draft.status !== 'DRAFT') {
+      req.session.flash = { error: 'Draf telah diajukan/difinalisasi dan tidak dapat diubah lagi.' }
       return res.redirect(`/procurement/${draftId}`)
     }
 
@@ -519,8 +519,8 @@ export const lock = async (req, res) => {
       return res.redirect('/procurement')
     }
 
-    if (draft.status === 'LOCKED') {
-      req.session.flash = { error: 'Draf sudah berstatus locked.' }
+    if (draft.status !== 'DRAFT') {
+      req.session.flash = { error: 'Draf sudah diajukan atau difinalisasi.' }
       return res.redirect(`/procurement/${draftId}`)
     }
 
@@ -575,8 +575,8 @@ export const destroy = async (req, res) => {
       return res.redirect('/procurement')
     }
 
-    if (draft.status === 'LOCKED') {
-      req.session.flash = { error: 'Draf telah dikunci dan tidak dapat dihapus.' }
+    if (draft.status !== 'DRAFT') {
+      req.session.flash = { error: 'Draf telah diajukan/difinalisasi dan tidak dapat dihapus.' }
       return res.redirect(`/procurement/${draftId}`)
     }
 

@@ -1,0 +1,148 @@
+extends ../../layouts/loggedin
+include ../../components/_form-components
+
+block content
+  //- Flash Messages
+  if success
+    .bg-green-50.border.border-green-300.text-green-800.px-4.py-3.rounded-lg.mb-6.flex.items-center.gap-3(role="alert")
+      svg.w-5.h-5.flex-shrink-0(fill="currentColor" viewBox="0 0 20 20")
+        path(fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd")
+      span= success
+
+  if error
+    .bg-red-50.border.border-red-300.text-red-800.px-4.py-3.rounded-lg.mb-6.flex.items-center.gap-3(role="alert")
+      svg.w-5.h-5.flex-shrink-0(fill="currentColor" viewBox="0 0 20 20")
+        path(fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd")
+      span= error
+
+  //- Navigation & Header
+  .flex.items-center.gap-2.text-sm.text-gray-500.mb-4
+    a(href="/prodi-head/procurements" class="hover:text-blue-600 transition") Daftar Review
+    span &gt;
+    span.text-gray-800 Detail Draf
+
+  div(class="flex flex-col lg:flex-row gap-6 mb-6")
+    //- Left Card: Info Draf
+    .flex-1.bg-white.p-6.rounded-xl.shadow-sm.border.border-gray-100
+      .flex.items-center.justify-between.mb-4
+        h4.text-lg.font-bold.text-gray-800 Informasi Draf Pengadaan
+        if draft.status === 'LOCKED'
+          span(class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800")
+            svg.w-3.h-3(fill="currentColor" viewBox="0 0 20 20")
+              path(fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd")
+            | Menunggu Review
+        else if draft.status === 'FINALIZED'
+          span(class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800")
+            svg.w-3.h-3(fill="currentColor" viewBox="0 0 20 20")
+              path(fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd")
+            | Difinalisasi Kaprodi
+
+      .grid.grid-cols-2.gap-4.text-sm
+        div
+          p.text-xs.text-gray-400 ID Draf
+          p.font-mono.font-semibold.text-gray-800= `#PR-${draft.id.toString().padStart(4, '0')}`
+        div
+          p.text-xs.text-gray-400 Tanggal Dibuat
+          p.font-semibold.text-gray-800= draft.date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+        div
+          p.text-xs.text-gray-400 Diajukan Oleh
+          p.font-semibold.text-gray-800= draft.user.name
+        div
+          p.text-xs.text-gray-400 Total Anggaran Keseluruhan
+          p.font-bold.text-blue-600.text-base= formatRupiah(totalCost)
+
+      if draft.status === 'LOCKED'
+        - const hasPending = draft.procurementDetails.some(d => d.status === 'PENDING')
+        .mt-6.pt-4.border-t.border-gray-100.flex.gap-2
+          form#form-finalize(action=`/prodi-head/procurements/${draft.id}/finalize` method="POST")
+            if hasPending
+              button(type="button" class="inline-flex items-center gap-2 bg-gray-300 text-gray-500 px-4 py-2 rounded-lg font-semibold text-sm cursor-not-allowed" title="Harap beri keputusan (Terima/Tolak) untuk semua barang terlebih dahulu.")
+                | Finalisasi Draf (Belum Lengkap)
+            else
+              button(type="button" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white px-4 py-2 rounded-lg transition font-semibold text-sm shadow-sm" onclick="customConfirm('Apakah Anda yakin ingin memfinalisasi draf ini? Setelah difinalisasi, Anda tidak dapat mengubah status review barang dan draf akan diteruskan ke Staf Administrasi.', { okText: 'Ya, Finalisasi', variant: 'success', title: 'Finalisasi Draf' }).then(function(c){ if(c) document.getElementById('form-finalize').submit(); });")
+                svg.w-4.h-4(fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24")
+                  path(stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7")
+                | Finalisasi Draf
+          +secondaryButton('Kembali', '/prodi-head/procurements')
+      else
+        .mt-6.pt-4.border-t.border-gray-100.flex.flex-col.gap-2
+          .p-3.bg-blue-50.text-blue-800.rounded-lg.text-sm
+            span.font-semibold Informasi: 
+            | Draf ini telah difinalisasi. Total anggaran untuk barang yang disetujui adalah 
+            span.font-bold= formatRupiah(totalAcceptedCost)
+          div
+            +secondaryButton('Kembali ke Daftar', '/prodi-head/procurements')
+
+    //- Right Card: Panduan Pengisian
+    div(class="bg-gradient-to-br from-blue-800 to-blue-900 p-6 rounded-xl shadow-sm text-white flex flex-col justify-between w-full lg:w-80")
+      div
+        h4.text-lg.font-bold.mb-2 Panduan Review
+        ul.text-xs.text-blue-100.space-y-2.list-disc.list-inside
+          <li>Tinjau setiap barang yang diajukan oleh Kepala Laboratorium.</li>
+          <li>Gunakan tombol <b>Terima</b> atau <b>Tolak</b> pada masing-masing barang.</li>
+          <li>Pastikan seluruh barang telah direview (tidak ada yang berstatus PENDING).</li>
+          <li>Klik <b>Finalisasi Draf</b> setelah selesai mereview semua barang.</li>
+      .mt-4.bg-blue-950.bg-opacity-40.p-3.rounded.border.border-blue-700.text-center
+        p.text-xs.text-blue-300 Setelah difinalisasi, draf tidak bisa diubah dan akan diproses Staf Administrasi.
+
+  //- List Items
+  .bg-white.rounded-xl.shadow-sm.border.border-gray-100.overflow-hidden.mb-6
+    .p-6.border-b.border-gray-100
+      h4.text-lg.font-bold.text-gray-800 Daftar Barang
+    .overflow-x-auto
+      table.w-full.text-sm
+        thead
+          tr.bg-gray-50.border-b.border-gray-200
+            th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs No
+            th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Nama Barang
+            th.px-6.py-3.text-center.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Jumlah
+            th.px-6.py-3.text-right.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Total Harga
+            th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Link
+            th.px-6.py-3.text-center.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Keputusan
+            if draft.status === 'LOCKED'
+              th.px-6.py-3.text-center.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Aksi
+        tbody
+          if draft.procurementDetails && draft.procurementDetails.length > 0
+            each detail, index in draft.procurementDetails
+              tr(class="border-b border-gray-100 hover:bg-gray-50 transition")
+                td.px-6.py-4.text-gray-500= index + 1
+                td.px-6.py-4
+                  p.font-semibold.text-gray-900= detail.item.name
+                  if detail.item.consumable
+                    span(class="inline-block px-2 py-0.5 mt-1 bg-purple-100 text-purple-800 text-xs rounded-full font-medium")
+                      | BHP (Satuan: #{detail.item.consumable.unit})
+                  else
+                    span(class="inline-block px-2 py-0.5 mt-1 bg-gray-100 text-gray-800 text-xs rounded-full font-medium")
+                      | Inventaris (#{detail.item.category})
+                td.px-6.py-4.text-center.text-gray-800.font-medium= detail.quantity
+                td.px-6.py-4.text-right.font-semibold.text-gray-900= formatRupiah(detail.price)
+                td.px-6.py-4
+                  a(href=detail.item.link target="_blank" class="text-blue-600 hover:underline inline-flex items-center gap-1")
+                    | Link Beli
+                    svg.w-3.h-3(fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24")
+                      path(stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14")
+                td.px-6.py-4.text-center
+                  if detail.status === 'PENDING'
+                    span(class="inline-block px-2.5 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full font-medium") Pending
+                  else if detail.status === 'ACCEPTED'
+                    span(class="inline-block px-2.5 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium") Diterima
+                  else if detail.status === 'REJECTED'
+                    span(class="inline-block px-2.5 py-1 bg-red-100 text-red-800 text-xs rounded-full font-medium") Ditolak
+                if draft.status === 'LOCKED'
+                  td.px-6.py-4.text-center
+                    .flex.items-center.justify-center.gap-2
+                      form(action=`/prodi-head/procurements/${draft.id}/items/${detail.id}/review` method="POST" class="inline-block")
+                        input(type="hidden" name="reviewStatus" value="ACCEPTED")
+                        button(type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded bg-green-50 text-green-600 hover:bg-green-600 hover:text-white transition shadow-sm border border-green-200" title="Terima Barang")
+                          svg.w-4.h-4(fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24")
+                            path(stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7")
+                      
+                      form(action=`/prodi-head/procurements/${draft.id}/items/${detail.id}/review` method="POST" class="inline-block")
+                        input(type="hidden" name="reviewStatus" value="REJECTED")
+                        button(type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition shadow-sm border border-red-200" title="Tolak Barang")
+                          svg.w-4.h-4(fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24")
+                            path(stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12")
+          else
+            tr
+              td.px-6.py-8.text-center.text-gray-400(colspan=(draft.status === 'LOCKED' ? '7' : '6'))
+                p.text-lg.mb-1 Draf pengadaan ini kosong.

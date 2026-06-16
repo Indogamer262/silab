@@ -66,6 +66,7 @@ model Consumable {
 enum DraftStatus {
   DRAFT
   LOCKED
+  FINALIZED
 }
 
 model ProcurementDraft {

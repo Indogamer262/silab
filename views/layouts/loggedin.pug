@@ -59,6 +59,11 @@ html(lang="id")
                 href="/admin-staff/inventory"
                 class=(currentPath === '/admin-staff/inventory' ? 'bg-blue-900 text-white' : 'text-blue-200 hover:bg-blue-700 hover:text-white')
               ) Kelola Inventaris
+            if user.role === 'PRODI_HEAD'
+              a.block.px-4.py-2.rounded.transition.font-semibold(
+                href="/prodi-head/procurements"
+                class=(currentPath === '/prodi-head/procurements' ? 'bg-blue-900 text-white' : 'text-blue-200 hover:bg-blue-700 hover:text-white')
+              ) Review Pengadaan
         
         .p-4.border-t.border-blue-700
           form(action="/logout" method="POST")
