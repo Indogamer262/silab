@@ -620,10 +620,13 @@ export const inventoryIndex = async (req, res) => {
     let inventories = []
     let consumables = []
 
-    // Build filters for Inventory
-    const invWhere = {}
+    // Build filters for Inventory (exclude BHP — they show in the consumables section)
+    const invWhere = {
+      item: { consumable: null },
+    }
     if (search) {
       invWhere.item = {
+        ...invWhere.item,
         name: { contains: search }
       }
     }
@@ -631,11 +634,13 @@ export const inventoryIndex = async (req, res) => {
       invWhere.condition = condition
     }
     if (category) {
-      if (!invWhere.item) invWhere.item = {}
-      invWhere.item.category = category
+      invWhere.item = { ...invWhere.item, category: category }
     }
     if (room) {
-      invWhere.roomId = room
+      const roomIdParsed = parseInt(room, 10)
+      if (!isNaN(roomIdParsed)) {
+        invWhere.roomId = roomIdParsed
+      }
     }
 
     // Build filters for Consumable

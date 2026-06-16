@@ -46,7 +46,7 @@ block content
           select(name="room" id="filter-room" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition")
             option(value="") Semua Ruangan
             each r in rooms
-              option(value=r.name selected=(selectedRoom === r.name))= r.name
+              option(value=r.id selected=(selectedRoom === r.id.toString()))= r.name
 
       .grid.grid-cols-1(class="md:grid-cols-4").gap-4.pt-2.border-t.border-dashed.border-gray-100
         //- Kondisi (Hanya relevan untuk Inventaris)
