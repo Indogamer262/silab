@@ -68,7 +68,28 @@ block content
         tbody
           if acceptedDetails && acceptedDetails.length > 0
             each detail, index in acceptedDetails
-              - const receivedCount = detail.item.inventories.length
+              - const receivedCount = detail.item._count.inventories
+              - const remaining = detail.quantity - receivedCount
+              -
+                let suggestedPrefix = 'INV-';
+                if (detail.item.inventories.length > 0) {
+                  const firstQr = detail.item.inventories[0].qrCode;
+                  if (firstQr && firstQr.includes('-')) {
+                    suggestedPrefix = firstQr.substring(0, firstQr.lastIndexOf('-') + 1);
+                  }
+                } else {
+                  const cleanName = detail.item.name.replace(/[^a-zA-Z\s]/g, '');
+                  const words = cleanName.split(/\s+/).filter(Boolean);
+                  let acronym = '';
+                  if (words.length >= 2) {
+                    acronym = (words[0].substring(0, 2) + words[1].substring(0, 1)).toUpperCase();
+                  } else if (words.length === 1 && words[0].length >= 3) {
+                    acronym = words[0].substring(0, 3).toUpperCase();
+                  } else {
+                    acronym = 'EQP';
+                  }
+                  suggestedPrefix = `INV-${acronym}-`;
+                }
               tr(class="border-b border-gray-100 hover:bg-gray-50 transition")
                 td.px-4.py-4.text-gray-500= index + 1
                 td.px-4.py-4
@@ -84,18 +105,30 @@ block content
                 td.px-4.py-4.text-center
                   span(class=`font-bold ${receivedCount === detail.quantity ? 'text-green-600' : 'text-blue-600'}`)= receivedCount
                 td.px-4.py-4
-                  if detail.item.inventories.length > 0
-                    div(class="flex flex-wrap gap-1.5")
-                      each inv in detail.item.inventories
-                        span(class="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-700 rounded font-mono text-xs whitespace-nowrap" title=`Kondisi: ${inv.condition} | Ruangan: ${inv.room.name}`)
-                          = inv.qrCode
+                  if detail.item.consumable
+                    if receivedCount > 0
+                      .flex.flex-col.gap-1
+                        span(class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-50 text-purple-700 rounded-lg text-xs font-semibold")
+                          svg.w-3.h-3(fill="currentColor" viewBox="0 0 20 20")
+                            path(d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z")
+                            path(fill-rule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clip-rule="evenodd")
+                          | #{receivedCount} #{detail.item.consumable.unit} diterima
+                        span(class="text-xs text-gray-400") Stok saat ini: #{detail.item.consumable.stock} #{detail.item.consumable.unit}
+                    else
+                      span.text-gray-400 Belum ada
                   else
-                    span.text-gray-400 Belum ada
+                    if detail.item.inventories.length > 0
+                      div(class="flex flex-wrap gap-1.5")
+                        each inv in detail.item.inventories
+                          span(class="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-700 rounded font-mono text-xs whitespace-nowrap" title=`Kondisi: ${inv.condition} | Ruangan: ${inv.room.name}`)
+                            = inv.qrCode
+                    else
+                      span.text-gray-400 Belum ada
                 td.px-4.py-4.text-center
                   if receivedCount < detail.quantity
                     button(
                       type="button"
-                      onclick=`openReceiveModal(${detail.id}, '${detail.item.name.replace(/'/g, "\\'")}')`
+                      onclick=`openReceiveModal(${detail.id}, '${detail.item.name.replace(/'/g, "\\'")}', ${!!detail.item.consumable}, ${remaining}, '${suggestedPrefix}')`
                       class="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-3 py-1.5 rounded-lg transition font-semibold text-xs shadow-sm"
                     )
                       | + Terima Barang
@@ -122,18 +155,31 @@ block content
             path(stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12")
       
       form(id="receive-form" method="POST" class="space-y-4")
-        //- Label/QR Code
-        .flex.flex-col.gap-1
-          label(for="qrCode").font-medium.text-gray-700.text-sm Label / QR Code Unik
+        //- QR Code Prefix (hidden for consumables)
+        div(id="qr-code-group" class="flex flex-col gap-1")
+          label(for="qrCodePrefix").font-medium.text-gray-700.text-sm Prefix QR Code
           input(
             type="text"
-            name="qrCode"
-            id="qrCode"
-            required
-            placeholder="Contoh: LAB-KOM-001"
+            name="qrCodePrefix"
+            id="qrCodePrefix"
+            placeholder="Contoh: INV-SLD-"
             class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition font-mono uppercase"
           )
-          p.text-xs.text-gray-400 Pastikan label ini belum digunakan oleh aset lain di laboratorium.
+          p.text-xs.text-gray-400 Nomor urut akan ditambahkan otomatis setelah prefix ini.
+
+        //- Quantity
+        .flex.flex-col.gap-1
+          label(for="quantity").font-medium.text-gray-700.text-sm Jumlah Penerimaan
+          input(
+            type="number"
+            name="quantity"
+            id="quantity"
+            min="1"
+            required
+            placeholder="Jumlah barang diterima"
+            class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+          )
+          p#qty-hint.text-xs.text-gray-400
 
         .grid.grid-cols-2.gap-4
           //- Room Selection
@@ -180,15 +226,36 @@ block content
           button(type="submit" class="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 active:bg-blue-800 transition font-semibold text-sm shadow-sm") Simpan Penerimaan
 
   script.
-    function openReceiveModal(detailId, itemName) {
+    function openReceiveModal(detailId, itemName, isConsumable, maxQty, suggestedPrefix) {
       const modal = document.getElementById('receive-modal');
       const backdrop = document.getElementById('receive-backdrop');
       const content = document.getElementById('receive-content');
       const title = document.getElementById('modal-title');
       const form = document.getElementById('receive-form');
+      const qrGroup = document.getElementById('qr-code-group');
+      const qrInput = document.getElementById('qrCodePrefix');
+      const qtyInput = document.getElementById('quantity');
+      const qtyHint = document.getElementById('qty-hint');
       
       title.textContent = `Terima Barang: ${itemName}`;
       form.action = `/admin-staff/procurements/${#{draft.id}}/receive/${detailId}`;
+
+      // Set quantity constraints
+      qtyInput.max = maxQty;
+      qtyInput.value = maxQty;
+      qtyHint.textContent = `Sisa kuota penerimaan: ${maxQty} barang`;
+
+      if (isConsumable) {
+        // BHP: hide prefix, quantity only
+        qrGroup.classList.add('hidden');
+        qrInput.removeAttribute('required');
+        qrInput.value = '';
+      } else {
+        // Regular inventory: show prefix, prefill with suggestion
+        qrGroup.classList.remove('hidden');
+        qrInput.setAttribute('required', 'required');
+        qrInput.value = suggestedPrefix || 'INV-';
+      }
       
       modal.classList.remove('hidden');
       setTimeout(() => {
@@ -212,3 +279,4 @@ block content
         modal.classList.add('hidden');
       }, 200);
     }
+
