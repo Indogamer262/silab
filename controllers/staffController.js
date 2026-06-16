@@ -189,6 +189,7 @@ export const updateBhpStock = async (req, res) => {
 export const maintenanceIndex = async (req, res) => {
   try {
     const inventories = await prisma.inventory.findMany({
+      where: { item: { consumable: null } },
       include: { item: true, room: true },
       orderBy: { qrCode: 'asc' },
     })

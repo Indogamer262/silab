@@ -142,6 +142,9 @@ export const showProcurement = async (req, res) => {
                     room: true,
                   },
                 },
+                _count: {
+                  select: { inventories: true },
+                },
               },
             },
           },
@@ -194,23 +197,18 @@ export const showProcurement = async (req, res) => {
 export const receiveItem = async (req, res) => {
   const draftId = parseInt(req.params.id, 10)
   const detailId = parseInt(req.params.detailId, 10)
-  const { qrCode, roomId, condition, receivedDate } = req.body
+  const { qrCodePrefix, quantity, roomId, condition, receivedDate } = req.body
 
   if (isNaN(draftId) || isNaN(detailId)) {
     req.session.flash = { error: 'ID tidak valid.' }
     return res.redirect('/admin-staff/procurements')
   }
 
-  const qrCodeTrimmed = qrCode?.trim() || ''
+  const quantityParsed = parseInt(quantity, 10)
   const roomIdParsed = parseInt(roomId, 10)
   const dateVal = receivedDate ? new Date(receivedDate) : new Date()
 
-  const oldData = { qrCode: qrCodeTrimmed, roomId, condition, receivedDate }
-
-  if (!qrCodeTrimmed || isNaN(roomIdParsed) || !condition) {
-    req.session.flash = { error: 'Semua field (Label/QR Code, Ruangan, Kondisi) wajib diisi.', old: oldData }
-    return res.redirect(`/admin-staff/procurements/${draftId}`)
-  }
+  const oldData = { qrCodePrefix, quantity, roomId, condition, receivedDate }
 
   try {
     // 1. Verify detail exists, belongs to the draft, is ACCEPTED, and has remaining quantity
@@ -236,8 +234,26 @@ export const receiveItem = async (req, res) => {
       return res.redirect(`/admin-staff/procurements/${draftId}`)
     }
 
-    if (detail.item.inventories.length >= detail.quantity) {
+    const remainingQty = detail.quantity - detail.item.inventories.length
+    if (remainingQty <= 0) {
       req.session.flash = { error: 'Semua barang untuk item ini sudah diterima.' }
+      return res.redirect(`/admin-staff/procurements/${draftId}`)
+    }
+
+    if (isNaN(quantityParsed) || quantityParsed <= 0 || quantityParsed > remainingQty) {
+      req.session.flash = { error: `Jumlah penerimaan tidak valid (Sisa kuota: ${remainingQty}).`, old: oldData }
+      return res.redirect(`/admin-staff/procurements/${draftId}`)
+    }
+
+    const isConsumable = !!detail.item.consumable
+
+    if (isNaN(roomIdParsed) || !condition || (!isConsumable && !qrCodePrefix?.trim())) {
+      req.session.flash = {
+        error: isConsumable
+          ? 'Semua field (Jumlah Penerimaan, Ruangan, Kondisi) wajib diisi.'
+          : 'Semua field (Prefix QR Code, Jumlah Penerimaan, Ruangan, Kondisi) wajib diisi.',
+        old: oldData
+      }
       return res.redirect(`/admin-staff/procurements/${draftId}`)
     }
 
@@ -248,37 +264,90 @@ export const receiveItem = async (req, res) => {
       return res.redirect(`/admin-staff/procurements/${draftId}`)
     }
 
-    // 3. Verify unique QR Code
-    const existingInv = await prisma.inventory.findUnique({ where: { qrCode: qrCodeTrimmed } })
-    if (existingInv) {
-      req.session.flash = { error: `Label/QR Code "${qrCodeTrimmed}" sudah digunakan oleh barang lain.`, old: oldData }
-      return res.redirect(`/admin-staff/procurements/${draftId}`)
-    }
+    // 3. Handle QR Code Generation if not consumable
+    const qrCodesToCreate = []
 
-    // 4. Create inventory record
-    await prisma.$transaction(async (tx) => {
-      await tx.inventory.create({
-        data: {
-          qrCode: qrCodeTrimmed,
-          receivedDate: dateVal,
-          condition: condition,
-          itemId: detail.itemId,
-          roomId: roomIdParsed,
+    if (!isConsumable) {
+      const prefix = qrCodePrefix.trim()
+
+      // Find all inventories with a qrCode starting with the prefix to determine the next numeric suffix
+      const existingInventories = await prisma.inventory.findMany({
+        where: {
+          qrCode: {
+            startsWith: prefix,
+          },
+        },
+        select: {
+          qrCode: true,
         },
       })
 
+      // Parse suffixes and find the maximum number
+      let maxNum = 0
+      existingInventories.forEach(inv => {
+        if (inv.qrCode) {
+          const suffixStr = inv.qrCode.slice(prefix.length)
+          const suffixNum = parseInt(suffixStr, 10)
+          if (!isNaN(suffixNum) && suffixNum > maxNum) {
+            maxNum = suffixNum
+          }
+        }
+      })
+
+      // Generate sequence of new QR codes
+      for (let i = 1; i <= quantityParsed; i++) {
+        const nextNum = maxNum + i
+        const nextNumStr = nextNum.toString().padStart(3, '0')
+        const newQr = `${prefix}${nextNumStr}`
+        qrCodesToCreate.push(newQr)
+      }
+
+      // Check if any of the generated QR codes already exist in the database (sanity check)
+      const collisionCheck = await prisma.inventory.findFirst({
+        where: {
+          qrCode: {
+            in: qrCodesToCreate,
+          },
+        },
+      })
+
+      if (collisionCheck) {
+        req.session.flash = { error: `Ditemukan konflik QR Code: "${collisionCheck.qrCode}" sudah terdaftar di sistem. Coba ganti prefix.`, old: oldData }
+        return res.redirect(`/admin-staff/procurements/${draftId}`)
+      }
+    }
+
+    // 4. Create inventory records and increment stock if consumable
+    await prisma.$transaction(async (tx) => {
+      for (let i = 0; i < quantityParsed; i++) {
+        const qr = isConsumable ? null : qrCodesToCreate[i]
+        await tx.inventory.create({
+          data: {
+            qrCode: qr,
+            receivedDate: dateVal,
+            condition: condition,
+            itemId: detail.itemId,
+            roomId: roomIdParsed,
+          },
+        })
+      }
+
       // If it is BHP (consumable), we should also increase its stock since it has arrived
-      if (detail.item.consumable) {
+      if (isConsumable) {
         await tx.consumable.update({
           where: { id: detail.item.consumable.id },
           data: {
-            stock: { increment: 1 },
+            stock: { increment: quantityParsed },
           },
         })
       }
     })
 
-    req.session.flash = { success: `Barang "${detail.item.name}" dengan label "${qrCodeTrimmed}" berhasil diterima.` }
+    const successMsg = isConsumable
+      ? `${quantityParsed} barang BHP "${detail.item.name}" berhasil diterima.`
+      : `${quantityParsed} barang "${detail.item.name}" berhasil diterima dengan QR Code ${qrCodesToCreate[0]} s/d ${qrCodesToCreate[qrCodesToCreate.length - 1]}.`
+
+    req.session.flash = { success: successMsg }
     res.redirect(`/admin-staff/procurements/${draftId}`)
   } catch (err) {
     console.error('Admin Staff receive item error:', err)
@@ -297,11 +366,14 @@ export const indexInventory = async (req, res) => {
 
     const rooms = await prisma.room.findMany({ orderBy: { name: 'asc' } })
 
-    const where = {}
+    const where = {
+      // Exclude BHP (consumable) items — they are tracked by stock, not QR labels
+      item: { consumable: null },
+    }
     if (search) {
       where.OR = [
         { qrCode: { contains: search } },
-        { item: { name: { contains: search } } },
+        { item: { name: { contains: search }, consumable: null } },
       ]
     }
     if (roomId) {
