@@ -1,0 +1,106 @@
+extends ../layouts/loggedin
+include ../components/_form-components
+
+block content
+  //- Flash Messages
+  if success
+    .bg-green-50.border.border-green-300.text-green-800.px-4.py-3.rounded-lg.mb-6.flex.items-center.gap-3(role="alert")
+      svg.w-5.h-5.flex-shrink-0(fill="currentColor" viewBox="0 0 20 20")
+        path(fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd")
+      span= success
+
+  if error
+    .bg-red-50.border.border-red-300.text-red-800.px-4.py-3.rounded-lg.mb-6.flex.items-center.gap-3(role="alert")
+      svg.w-5.h-5.flex-shrink-0(fill="currentColor" viewBox="0 0 20 20")
+        path(fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd")
+      span= error
+
+  //- Header
+  .flex.items-center.justify-between.mb-6
+    div
+      h3.text-2xl.font-bold.text-gray-800 Daftar Pengadaan Barang
+      p.text-sm.text-gray-500.mt-1 Kelola draf usulan pengadaan barang inventaris tahunan dan barang habis pakai (BHP).
+    form(action="/procurement" method="POST")
+      button(type="submit" class="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 active:bg-blue-800 transition font-semibold text-sm shadow-sm")
+        | + Buat Draf Baru
+
+  //- Filter Form
+  .bg-white.rounded-xl.shadow-sm.border.border-gray-100.p-4.mb-6
+    form(action="/procurement" method="GET" class="flex flex-wrap items-center gap-4")
+      .flex.flex-col.gap-1.min-w-40
+        label(for="filter-year").text-xs.font-semibold.text-gray-500 Filter Tahun
+        select(name="year" id="filter-year" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition")
+          option(value="") -- Semua Tahun --
+          each yr in years
+            option(value=yr selected=(selectedYear === yr.toString()))= yr
+
+      .flex.flex-col.gap-1.min-w-40
+        label(for="filter-month").text-xs.font-semibold.text-gray-500 Filter Bulan
+        select(name="month" id="filter-month" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition")
+          option(value="") -- Semua Bulan --
+          - const months = [{v:'1',n:'Januari'}, {v:'2',n:'Februari'}, {v:'3',n:'Maret'}, {v:'4',n:'April'}, {v:'5',n:'Mei'}, {v:'6',n:'Juni'}, {v:'7',n:'Juli'}, {v:'8',n:'Agustus'}, {v:'9',n:'September'}, {v:'10',n:'Oktober'}, {v:'11',n:'November'}, {v:'12',n:'Desember'}]
+          each m in months
+            option(value=m.v selected=(selectedMonth === m.v))= m.n
+
+      .flex.items-end.gap-2.h-full.pt-5
+        button(type="submit" class="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-4 py-1.5 rounded-lg text-sm font-semibold transition shadow-sm") Filter
+        a(href="/procurement" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-1.5 rounded-lg text-sm font-semibold transition border border-gray-200") Reset
+
+  //- Table
+  .bg-white.rounded-xl.shadow-sm.border.border-gray-100.overflow-hidden
+    .overflow-x-auto
+      table.w-full.text-sm
+        thead
+          tr.bg-gray-50.border-b.border-gray-200
+            th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs ID Draf
+            th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Tanggal Pengajuan
+            th.px-6.py-3.text-center.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Jumlah Item
+            th.px-6.py-3.text-center.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Status
+            th.px-6.py-3.text-center.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Aksi
+        tbody
+          if drafts && drafts.length > 0
+            each draft in drafts
+              tr(class="border-b border-gray-100 hover:bg-gray-50 transition")
+                td.px-6.py-4.font-mono.text-gray-700= `#PR-${draft.id.toString().padStart(4, '0')}`
+                td.px-6.py-4.text-gray-600
+                  = draft.date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+                td.px-6.py-4.text-center.text-gray-800.font-medium
+                  = draft.procurementDetails.length
+                td.px-6.py-4.text-center
+                  if draft.status === 'LOCKED'
+                    span(class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800")
+                      svg.w-3.h-3(fill="currentColor" viewBox="0 0 20 20")
+                        path(fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd")
+                      | Locked / Diajukan
+                  else if draft.status === 'FINALIZED'
+                    span(class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800")
+                      svg.w-3.h-3(fill="currentColor" viewBox="0 0 20 20")
+                        path(fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd")
+                      | Difinalisasi Kaprodi
+                  else
+                    span(class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800")
+                      svg.w-3.h-3(fill="currentColor" viewBox="0 0 20 20")
+                        path(d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z")
+                      | Draft
+                td.px-6.py-4.text-center
+                  .flex.items-center.justify-center.gap-2
+                    if draft.status !== 'DRAFT'
+                      a(href=`/procurement/${draft.id}` class="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-4 py-2 rounded-lg transition font-semibold text-sm shadow-sm")
+                        | Lihat Detail
+                    else
+                      +warningButton('Edit / Kelola', `/procurement/${draft.id}`)
+                      if draft.procurementDetails.length === 0
+                        form(id=`form-del-${draft.id}` action=`/procurement/${draft.id}/delete` method="POST" class="inline-block")
+                          button(
+                            type="button"
+                            class="inline-flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 active:bg-red-800 transition font-semibold text-sm shadow-sm"
+                            onclick=`customConfirm('Apakah Anda yakin ingin menghapus draf #PR-${draft.id.toString().padStart(4, '0')}?', { okText: 'Ya, Hapus', title: 'Hapus Draf' }).then(function(c){ if(c) document.getElementById('form-del-${draft.id}').submit(); });`
+                          ) Hapus
+                      else
+                        span(class="inline-flex items-center gap-2 bg-gray-200 text-gray-400 px-4 py-2 rounded-lg font-semibold text-sm cursor-not-allowed" title="Hapus item di dalam draf terlebih dahulu sebelum menghapus draf")
+                          | Hapus
+          else
+            tr
+              td.px-6.py-8.text-center.text-gray-400(colspan="5")
+                p.text-lg.mb-1 Belum ada draf pengadaan barang.
+                p.text-sm Klik "+ Buat Draf Baru" untuk membuat draf pengadaan barang tahunan.

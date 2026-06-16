@@ -1,0 +1,138 @@
+extends ../layouts/loggedin
+include ../components/_form-components
+
+block content
+  //- Header
+  .flex.items-center.justify-between.mb-6
+    div
+      h3.text-2xl.font-bold.text-gray-800 Daftar Inventaris &amp; BHP
+      p.text-sm.text-gray-500.mt-1 Lihat seluruh barang inventaris (aset) dan barang habis pakai (BHP) yang terdaftar di dalam laboratorium.
+
+  //- Filter Form
+  .bg-white.rounded-xl.shadow-sm.border.border-gray-100.p-6.mb-6
+    form(action="/procurement/inventory" method="GET" class="space-y-4")
+      .grid.grid-cols-1(class="md:grid-cols-4").gap-4
+        //- Search
+        .flex.flex-col.gap-1
+          label(for="search").text-xs.font-semibold.text-gray-500 Cari Nama Barang
+          input(
+            type="text"
+            name="search"
+            id="search"
+            value=search
+            placeholder="Ketik nama barang..."
+            class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+          )
+
+        //- Tipe Barang
+        .flex.flex-col.gap-1
+          label(for="filter-type").text-xs.font-semibold.text-gray-500 Jenis Barang
+          select(name="type" id="filter-type" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition")
+            option(value="all" selected=(selectedType === 'all')) Semua Jenis
+            option(value="inventaris" selected=(selectedType === 'inventaris')) Inventaris (Aset)
+            option(value="bhp" selected=(selectedType === 'bhp')) BHP (Habis Pakai)
+
+        //- Kategori
+        .flex.flex-col.gap-1
+          label(for="filter-category").text-xs.font-semibold.text-gray-500 Kategori
+          select(name="category" id="filter-category" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition")
+            option(value="") Semua Kategori
+            option(value="ELECTRONICS" selected=(selectedCategory === 'ELECTRONICS')) Elektronik
+            option(value="NON_ELECTRONICS" selected=(selectedCategory === 'NON_ELECTRONICS')) Non-Elektronik
+
+        //- Ruangan (Hanya relevan untuk Inventaris)
+        .flex.flex-col.gap-1
+          label(for="filter-room").text-xs.font-semibold.text-gray-500 Ruangan / Lokasi
+          select(name="room" id="filter-room" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition")
+            option(value="") Semua Ruangan
+            each r in rooms
+              option(value=r.id selected=(selectedRoom === r.id.toString()))= r.name
+
+      .grid.grid-cols-1(class="md:grid-cols-4").gap-4.pt-2.border-t.border-dashed.border-gray-100
+        //- Kondisi (Hanya relevan untuk Inventaris)
+        .flex.flex-col.gap-1
+          label(for="filter-condition").text-xs.font-semibold.text-gray-500 Kondisi (Aset)
+          select(name="condition" id="filter-condition" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition")
+            option(value="") Semua Kondisi
+            option(value="GOOD" selected=(selectedCondition === 'GOOD')) Baik (GOOD)
+            option(value="FAIR" selected=(selectedCondition === 'FAIR')) Cukup Baik (FAIR)
+            option(value="POOR" selected=(selectedCondition === 'POOR')) Buruk (POOR)
+            option(value="BROKEN" selected=(selectedCondition === 'BROKEN')) Rusak (BROKEN)
+            option(value="LOST" selected=(selectedCondition === 'LOST')) Hilang (LOST)
+
+        .flex.items-end.gap-2.h-full.pt-4(class="md:col-span-3 justify-end")
+          button(type="submit" class="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-5 py-1.5 rounded-lg text-sm font-semibold transition shadow-sm") Terapkan Filter
+          a(href="/procurement/inventory" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-1.5 rounded-lg text-sm font-semibold transition border border-gray-200") Reset Filter
+
+  //- List Inventaris
+  if selectedType === 'all' || selectedType === 'inventaris'
+    .bg-white.rounded-xl.shadow-sm.border.border-gray-100.overflow-hidden.mb-6
+      .p-5.border-b.border-gray-100.bg-gray-50.flex.justify-between.items-center
+        h4.text-base.font-bold.text-gray-800 Barang Inventaris (Aset Tetap)
+        span(class="text-xs bg-blue-100 text-blue-800 px-2.5 py-1 rounded-full font-semibold") Total: #{inventories.length} item
+      .overflow-x-auto
+        table.w-full.text-sm
+          thead
+            tr.bg-gray-50.border-b.border-gray-200
+              th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs QR Code
+              th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Nama Aset
+              th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Kategori
+              th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Tanggal Diterima
+              th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Lokasi Ruangan
+              th.px-6.py-3.text-center.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Kondisi
+          tbody
+            if inventories && inventories.length > 0
+              each inv in inventories
+                tr.border-b.border-gray-100.hover_bg-gray-50.transition
+                  td.px-6.py-4.font-mono.text-gray-700.text-xs.font-semibold= inv.qrCode || '-'
+                  td.px-6.py-4.font-medium.text-gray-900= inv.item.name
+                  td.px-6.py-4
+                    span(class="inline-block px-2 py-0.5 text-xs rounded-full " + (inv.item.category === 'ELECTRONICS' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-orange-50 text-orange-700 border border-orange-200'))
+                      = inv.item.category === 'ELECTRONICS' ? 'Elektronik' : 'Non-Elektronik'
+                  td.px-6.py-4.text-gray-500
+                    = inv.receivedDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+                  td.px-6.py-4.text-gray-700= inv.room.name
+                  td.px-6.py-4.text-center
+                    if inv.condition === 'GOOD'
+                      span(class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800") Baik (GOOD)
+                    else if inv.condition === 'FAIR'
+                      span(class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800") Cukup (FAIR)
+                    else if inv.condition === 'POOR'
+                      span(class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800") Buruk (POOR)
+                    else if inv.condition === 'BROKEN'
+                      span(class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800") Rusak (BROKEN)
+                    else
+                      span(class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800") Hilang (LOST)
+            else
+              tr
+                td.px-6.py-8.text-center.text-gray-400(colspan="6") Tidak ada barang inventaris yang cocok dengan filter.
+
+  //- List BHP
+  if selectedType === 'all' || selectedType === 'bhp'
+    .bg-white.rounded-xl.shadow-sm.border.border-gray-100.overflow-hidden.mb-6
+      .p-5.border-b.border-gray-100.bg-gray-50.flex.justify-between.items-center
+        h4.text-base.font-bold.text-gray-800 Barang Habis Pakai (BHP)
+        span(class="text-xs bg-purple-100 text-purple-800 px-2.5 py-1 rounded-full font-semibold") Total: #{consumables.length} item
+      .overflow-x-auto
+        table.w-full.text-sm
+          thead
+            tr.bg-gray-50.border-b.border-gray-200
+              th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs No
+              th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Nama BHP
+              th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Kategori
+              th.px-6.py-3.text-center.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Stok
+              th.px-6.py-3.text-left.font-semibold.text-gray-600.uppercase.tracking-wider.text-xs Satuan
+          tbody
+            if consumables && consumables.length > 0
+              each cons, idx in consumables
+                tr.border-b.border-gray-100.hover_bg-gray-50.transition
+                  td.px-6.py-4.text-gray-500= idx + 1
+                  td.px-6.py-4.font-medium.text-gray-900= cons.name
+                  td.px-6.py-4
+                    span(class="inline-block px-2 py-0.5 text-xs rounded-full " + (cons.item.category === 'ELECTRONICS' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-orange-50 text-orange-700 border border-orange-200'))
+                      = cons.item.category === 'ELECTRONICS' ? 'Elektronik' : 'Non-Elektronik'
+                  td.px-6.py-4.text-center.font-semibold(class=(cons.stock === 0 ? 'text-red-600' : 'text-gray-800'))= cons.stock
+                  td.px-6.py-4.text-gray-600= cons.unit
+            else
+              tr
+                td.px-6.py-8.text-center.text-gray-400(colspan="5") Tidak ada barang habis pakai yang cocok dengan filter.

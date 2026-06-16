@@ -1,0 +1,46 @@
+{
+  "name": "silab",
+  "version": "1.0.0",
+  "description": "Sistem Informasi Inventaris Laboratorium",
+  "homepage": "https://github.com/Indogamer262/silab#readme",
+  "bugs": {
+    "url": "https://github.com/Indogamer262/silab/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Indogamer262/silab.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon server.js",
+    "tailwind:watch": "tailwindcss -i ./src/input.css -o ./public/css/style.css --watch"
+  },
+  "dependencies": {
+    "@prisma/adapter-mariadb": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^17.4.2",
+    "ejs": "^5.0.2",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "nodemon": "^3.1.14",
+    "pug": "^3.0.4"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.5.0",
+    "postcss": "^8.5.15",
+    "prisma": "^7.8.0",
+    "tailwindcss": "^3.4.19",
+    "tsx": "^4.22.4"
+  },
+  "overrides": {
+    "@hono/node-server": ">=1.19.13"
+  },
+  "prisma": {
+    "seed": "npx tsx prisma/seed.js"
+  }
+}

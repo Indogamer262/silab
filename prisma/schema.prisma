@@ -1,0 +1,149 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum Role {
+  ADMIN
+  LAB_HEAD
+  PRODI_HEAD
+  ADMIN_STAFF
+  LAB_STAFF
+}
+
+model User {
+  id                String             @id @db.VarChar(7)
+  email             String             @unique @db.VarChar(255)
+  name              String             @db.VarChar(100)
+  role              Role
+  password          String             @db.VarChar(255)
+  procurementDrafts ProcurementDraft[]
+  maintenanceLogs   MaintenanceLog[]
+
+  @@map("user")
+}
+
+enum Category {
+  ELECTRONICS
+  NON_ELECTRONICS
+}
+
+model Item {
+  id                 Int                 @id @default(autoincrement())
+  name               String              @db.VarChar(100)
+  category           Category
+  price              BigInt
+  link               String              @db.VarChar(255)
+  consumable         Consumable?
+  procurementDetails ProcurementDetail[]
+  inventories        Inventory[]
+
+  @@map("item")
+}
+
+model Consumable {
+  id              Int              @id @default(autoincrement())
+  name            String
+  unit            String
+  stock           Int
+  itemId          Int              @unique @map("item_id")
+  item            Item             @relation(fields: [itemId], references: [id])
+  maintenanceLogs MaintenanceLog[]
+
+  @@map("consumable")
+}
+
+enum DraftStatus {
+  DRAFT
+  LOCKED
+  FINALIZED
+}
+
+model ProcurementDraft {
+  id                 Int                 @id @default(autoincrement())
+  date               DateTime
+  userId             String              @map("user_id") @db.VarChar(7)
+  user               User                @relation(fields: [userId], references: [id])
+  status             DraftStatus
+  procurementDetails ProcurementDetail[]
+
+  @@map("procurement_draft")
+}
+
+enum ReviewStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model ProcurementDetail {
+  id                  Int              @id @default(autoincrement())
+  quantity            Int
+  price               BigInt
+  status              ReviewStatus
+  draftId             Int              @map("draft_id")
+  itemId              Int              @map("item_id")
+  replacedInventoryId Int?             @map("replaced_inventory_id")
+  procurementDraft    ProcurementDraft @relation(fields: [draftId], references: [id])
+  item                Item             @relation(fields: [itemId], references: [id])
+  replacedInventory   Inventory?       @relation("InventoryReplacement", fields: [replacedInventoryId], references: [id])
+
+  @@map("procurement_detail")
+}
+
+model Room {
+  id        Int         @id @default(autoincrement())
+  name      String      @unique @db.VarChar(100)
+  location  String      @db.VarChar(100)
+  inventory Inventory[]
+
+  @@map("room")
+}
+
+enum Condition {
+  GOOD
+  FAIR
+  POOR
+  BROKEN
+  LOST
+}
+
+model Inventory {
+  id                           Int                 @id @default(autoincrement())
+  qrCode                       String?             @unique @map("qr_code") @db.VarChar(255)
+  receivedDate                 DateTime            @map("received_date") @db.Date
+  condition                    Condition
+  itemId                       Int                 @map("item_id")
+  roomId                       Int                 @map("room_id")
+  item                         Item                @relation(fields: [itemId], references: [id])
+  room                         Room                @relation(fields: [roomId], references: [id])
+  maintenanceLog               MaintenanceLog[]
+  replacedByProcurementDetails ProcurementDetail[] @relation("InventoryReplacement")
+
+  @@map("inventory")
+}
+
+model MaintenanceLog {
+  id                Int         @id @default(autoincrement())
+  date              DateTime    @db.Date
+  description       String      @db.Text
+  consumableUsedQty Int?        @map("consumable_used_qty")
+  inventoryId       Int         @map("inventory_id")
+  consumableId      Int?        @map("consumable_id")
+  userId            String      @map("user_id") @db.VarChar(7)
+  inventory         Inventory   @relation(fields: [inventoryId], references: [id])
+  consumable        Consumable? @relation(fields: [consumableId], references: [id])
+  user              User        @relation(fields: [userId], references: [id])
+
+  @@map("maintenance_log")
+}
