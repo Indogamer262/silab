@@ -188,7 +188,21 @@ export const updateBhpStock = async (req, res) => {
  */
 export const maintenanceIndex = async (req, res) => {
   try {
+    const { search, condition } = req.query
+
+    const where = {}
+    if (search) {
+      where.OR = [
+        { qrCode: { contains: search } },
+        { item: { name: { contains: search } } }
+      ]
+    }
+    if (condition && condition !== 'all') {
+      where.condition = condition
+    }
+
     const inventories = await prisma.inventory.findMany({
+      where,
       include: { item: true, room: true },
       orderBy: { qrCode: 'asc' },
     })
@@ -213,6 +227,8 @@ export const maintenanceIndex = async (req, res) => {
       inventories,
       consumables,
       logs,
+      search: search || '',
+      selectedCondition: condition || 'all',
       success: req.session.flash?.success ?? null,
       error: req.session.flash?.error ?? null,
     })

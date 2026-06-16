@@ -34,12 +34,12 @@ html(lang="id")
               ) Kelola Ruangan
             if user.role === 'LAB_HEAD'
               a.block.px-4.py-2.rounded.transition.font-semibold(
-                href="/procurement"
-                class=(currentPath === '/procurement' ? 'bg-blue-900 text-white' : 'text-blue-200 hover:bg-blue-700 hover:text-white')
+                href="/labhead"
+                class=(currentPath === '/labhead' ? 'bg-blue-900 text-white' : 'text-blue-200 hover:bg-blue-700 hover:text-white')
               ) Pengadaan Barang
               a.block.px-4.py-2.rounded.transition.font-semibold(
-                href="/procurement/inventory"
-                class=(currentPath === '/procurement/inventory' ? 'bg-blue-900 text-white' : 'text-blue-200 hover:bg-blue-700 hover:text-white')
+                href="/labhead/inventory"
+                class=(currentPath === '/labhead/inventory' ? 'bg-blue-900 text-white' : 'text-blue-200 hover:bg-blue-700 hover:text-white')
               ) Daftar Inventaris &amp; BHP
             if user.role === 'LAB_STAFF'
               a.block.px-4.py-2.rounded.transition.font-semibold(

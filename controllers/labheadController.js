@@ -8,7 +8,7 @@ const formatRupiah = (amount) => {
 }
 
 /**
- * GET /procurement
+ * GET /labhead
  * List all procurement drafts created by the logged-in Lab Head.
  */
 export const index = async (req, res) => {
@@ -42,10 +42,10 @@ export const index = async (req, res) => {
     // Extract unique years from all drafts of this user
     const years = [...new Set(allDrafts.map(d => d.date.getFullYear()))].sort((a, b) => b - a)
 
-    res.render('procurement/index', {
+    res.render('labhead/index', {
       title: 'Pengadaan Barang',
       user: res.locals.user,
-      currentPath: '/procurement',
+      currentPath: '/labhead',
       drafts: filteredDrafts,
       years,
       selectedYear: year || '',
@@ -66,7 +66,7 @@ export const index = async (req, res) => {
 }
 
 /**
- * POST /procurement
+ * POST /labhead
  * Create a new empty procurement draft.
  */
 export const store = async (req, res) => {
@@ -80,16 +80,16 @@ export const store = async (req, res) => {
     })
 
     req.session.flash = { success: 'Draf pengadaan baru berhasil dibuat.' }
-    res.redirect(`/procurement/${newDraft.id}`)
+    res.redirect(`/labhead/${newDraft.id}`)
   } catch (err) {
     console.error('Procurement store error:', err)
     req.session.flash = { error: 'Gagal membuat draf pengadaan baru.' }
-    res.redirect('/procurement')
+    res.redirect('/labhead')
   }
 }
 
 /**
- * GET /procurement/:id
+ * GET /labhead/:id
  * Show procurement draft details and edit form if status is DRAFT.
  */
 export const show = async (req, res) => {
@@ -97,7 +97,7 @@ export const show = async (req, res) => {
     const draftId = parseInt(req.params.id, 10)
     if (isNaN(draftId)) {
       req.session.flash = { error: 'ID draf tidak valid.' }
-      return res.redirect('/procurement')
+      return res.redirect('/labhead')
     }
 
     const draft = await prisma.procurementDraft.findUnique({
@@ -124,13 +124,13 @@ export const show = async (req, res) => {
 
     if (!draft) {
       req.session.flash = { error: 'Draf pengadaan tidak ditemukan.' }
-      return res.redirect('/procurement')
+      return res.redirect('/labhead')
     }
 
     // Ensure user only accesses their own drafts (security check)
     if (draft.userId !== req.session.user.id) {
       req.session.flash = { error: 'Anda tidak memiliki akses ke draf ini.' }
-      return res.redirect('/procurement')
+      return res.redirect('/labhead')
     }
 
     // Fetch all existing inventory items for the replacement option
@@ -144,10 +144,10 @@ export const show = async (req, res) => {
       },
     })
 
-    res.render('procurement/show', {
+    res.render('labhead/show', {
       title: `Detail Draf Pengadaan #${draft.id}`,
       user: res.locals.user,
-      currentPath: '/procurement',
+      currentPath: '/labhead',
       draft,
       inventories,
       formatRupiah,
@@ -167,14 +167,14 @@ export const show = async (req, res) => {
 }
 
 /**
- * POST /procurement/:id/items
+ * POST /labhead/:id/items
  * Add an item to the procurement draft.
  */
 export const addItem = async (req, res) => {
   const draftId = parseInt(req.params.id, 10)
   if (isNaN(draftId)) {
     req.session.flash = { error: 'ID draf tidak valid.' }
-    return res.redirect('/procurement')
+    return res.redirect('/labhead')
   }
 
   const { name, price, quantity, link, itemType, category, replacedInventoryId, unit } = req.body
@@ -190,7 +190,7 @@ export const addItem = async (req, res) => {
   // 1. Validate general fields
   if (!nameTrimmed || isNaN(priceParsed) || priceParsed <= 0 || isNaN(quantityParsed) || quantityParsed <= 0 || !linkTrimmed || !itemType) {
     req.session.flash = { error: 'Semua field wajib diisi dengan benar.', old: oldData }
-    return res.redirect(`/procurement/${draftId}`)
+    return res.redirect(`/labhead/${draftId}`)
   }
 
   try {
@@ -198,12 +198,12 @@ export const addItem = async (req, res) => {
     const draft = await prisma.procurementDraft.findUnique({ where: { id: draftId } })
     if (!draft || draft.userId !== req.session.user.id) {
       req.session.flash = { error: 'Draf tidak ditemukan atau Anda tidak memiliki akses.' }
-      return res.redirect('/procurement')
+      return res.redirect('/labhead')
     }
 
     if (draft.status !== 'DRAFT') {
       req.session.flash = { error: 'Draf telah diajukan/difinalisasi dan tidak dapat diubah lagi.' }
-      return res.redirect(`/procurement/${draftId}`)
+      return res.redirect(`/labhead/${draftId}`)
     }
 
     // 3. Specific validation based on type
@@ -213,7 +213,7 @@ export const addItem = async (req, res) => {
     if (itemType === 'inventaris') {
       if (!category || !['ELECTRONICS', 'NON_ELECTRONICS'].includes(category)) {
         req.session.flash = { error: 'Kategori inventaris tidak valid.', old: oldData }
-        return res.redirect(`/procurement/${draftId}`)
+        return res.redirect(`/labhead/${draftId}`)
       }
       finalCategory = category
 
@@ -223,7 +223,7 @@ export const addItem = async (req, res) => {
           const invExists = await prisma.inventory.findUnique({ where: { id: repId } })
           if (!invExists) {
             req.session.flash = { error: 'Barang inventaris pengganti tidak ditemukan.', old: oldData }
-            return res.redirect(`/procurement/${draftId}`)
+            return res.redirect(`/labhead/${draftId}`)
           }
           dbReplacedInventoryId = repId
         }
@@ -231,11 +231,11 @@ export const addItem = async (req, res) => {
     } else if (itemType === 'bhp') {
       if (!unitTrimmed) {
         req.session.flash = { error: 'Satuan BHP wajib diisi.', old: oldData }
-        return res.redirect(`/procurement/${draftId}`)
+        return res.redirect(`/labhead/${draftId}`)
       }
     } else {
       req.session.flash = { error: 'Tipe item tidak valid.', old: oldData }
-      return res.redirect(`/procurement/${draftId}`)
+      return res.redirect(`/labhead/${draftId}`)
     }
 
     // 4. Perform database insertion in a transaction
@@ -276,16 +276,16 @@ export const addItem = async (req, res) => {
     })
 
     req.session.flash = { success: `Item "${nameTrimmed}" berhasil ditambahkan ke draf.` }
-    res.redirect(`/procurement/${draftId}`)
+    res.redirect(`/labhead/${draftId}`)
   } catch (err) {
     console.error('Procurement addItem error:', err)
     req.session.flash = { error: 'Gagal menambahkan item ke draf. Silakan coba lagi.', old: oldData }
-    res.redirect(`/procurement/${draftId}`)
+    res.redirect(`/labhead/${draftId}`)
   }
 }
 
 /**
- * POST /procurement/:id/items/:detailId/delete
+ * POST /labhead/:id/items/:detailId/delete
  * Delete an item from a procurement draft.
  */
 export const removeItem = async (req, res) => {
@@ -294,7 +294,7 @@ export const removeItem = async (req, res) => {
 
   if (isNaN(draftId) || isNaN(detailId)) {
     req.session.flash = { error: 'ID tidak valid.' }
-    return res.redirect('/procurement')
+    return res.redirect('/labhead')
   }
 
   try {
@@ -302,12 +302,12 @@ export const removeItem = async (req, res) => {
     const draft = await prisma.procurementDraft.findUnique({ where: { id: draftId } })
     if (!draft || draft.userId !== req.session.user.id) {
       req.session.flash = { error: 'Draf tidak ditemukan atau Anda tidak memiliki akses.' }
-      return res.redirect('/procurement')
+      return res.redirect('/labhead')
     }
 
     if (draft.status !== 'DRAFT') {
       req.session.flash = { error: 'Draf telah diajukan/difinalisasi dan tidak dapat diubah lagi.' }
-      return res.redirect(`/procurement/${draftId}`)
+      return res.redirect(`/labhead/${draftId}`)
     }
 
     // Verify detail belongs to this draft
@@ -324,7 +324,7 @@ export const removeItem = async (req, res) => {
 
     if (!detail || detail.draftId !== draftId) {
       req.session.flash = { error: 'Item tidak ditemukan di draf ini.' }
-      return res.redirect(`/procurement/${draftId}`)
+      return res.redirect(`/labhead/${draftId}`)
     }
 
     // Perform deletion
@@ -342,16 +342,16 @@ export const removeItem = async (req, res) => {
     })
 
     req.session.flash = { success: `Item "${detail.item.name}" berhasil dihapus dari draf.` }
-    res.redirect(`/procurement/${draftId}`)
+    res.redirect(`/labhead/${draftId}`)
   } catch (err) {
     console.error('Procurement removeItem error:', err)
     req.session.flash = { error: 'Gagal menghapus item dari draf.' }
-    res.redirect(`/procurement/${draftId}`)
+    res.redirect(`/labhead/${draftId}`)
   }
 }
 
 /**
- * POST /procurement/:id/items/:detailId/edit
+ * POST /labhead/:id/items/:detailId/edit
  * Update an item details in the procurement draft.
  */
 export const updateItem = async (req, res) => {
@@ -360,7 +360,7 @@ export const updateItem = async (req, res) => {
 
   if (isNaN(draftId) || isNaN(detailId)) {
     req.session.flash = { error: 'ID tidak valid.' }
-    return res.redirect('/procurement')
+    return res.redirect('/labhead')
   }
 
   const { name, price, quantity, link, itemType, category, replacedInventoryId, unit } = req.body
@@ -373,7 +373,7 @@ export const updateItem = async (req, res) => {
 
   if (!nameTrimmed || isNaN(priceParsed) || priceParsed <= 0 || isNaN(quantityParsed) || quantityParsed <= 0 || !linkTrimmed || !itemType) {
     req.session.flash = { error: 'Semua field wajib diisi dengan benar.' }
-    return res.redirect(`/procurement/${draftId}`)
+    return res.redirect(`/labhead/${draftId}`)
   }
 
   try {
@@ -381,12 +381,12 @@ export const updateItem = async (req, res) => {
     const draft = await prisma.procurementDraft.findUnique({ where: { id: draftId } })
     if (!draft || draft.userId !== req.session.user.id) {
       req.session.flash = { error: 'Draf tidak ditemukan atau Anda tidak memiliki akses.' }
-      return res.redirect('/procurement')
+      return res.redirect('/labhead')
     }
 
     if (draft.status !== 'DRAFT') {
       req.session.flash = { error: 'Draf telah diajukan/difinalisasi dan tidak dapat diubah lagi.' }
-      return res.redirect(`/procurement/${draftId}`)
+      return res.redirect(`/labhead/${draftId}`)
     }
 
     // Verify detail belongs to this draft
@@ -403,7 +403,7 @@ export const updateItem = async (req, res) => {
 
     if (!detail || detail.draftId !== draftId) {
       req.session.flash = { error: 'Item tidak ditemukan di draf ini.' }
-      return res.redirect(`/procurement/${draftId}`)
+      return res.redirect(`/labhead/${draftId}`)
     }
 
     let finalCategory = 'NON_ELECTRONICS'
@@ -412,7 +412,7 @@ export const updateItem = async (req, res) => {
     if (itemType === 'inventaris') {
       if (!category || !['ELECTRONICS', 'NON_ELECTRONICS'].includes(category)) {
         req.session.flash = { error: 'Kategori inventaris tidak valid.' }
-        return res.redirect(`/procurement/${draftId}`)
+        return res.redirect(`/labhead/${draftId}`)
       }
       finalCategory = category
 
@@ -422,7 +422,7 @@ export const updateItem = async (req, res) => {
           const invExists = await prisma.inventory.findUnique({ where: { id: repId } })
           if (!invExists) {
             req.session.flash = { error: 'Barang inventaris pengganti tidak ditemukan.' }
-            return res.redirect(`/procurement/${draftId}`)
+            return res.redirect(`/labhead/${draftId}`)
           }
           dbReplacedInventoryId = repId
         }
@@ -430,11 +430,11 @@ export const updateItem = async (req, res) => {
     } else if (itemType === 'bhp') {
       if (!unitTrimmed) {
         req.session.flash = { error: 'Satuan BHP wajib diisi.' }
-        return res.redirect(`/procurement/${draftId}`)
+        return res.redirect(`/labhead/${draftId}`)
       }
     } else {
       req.session.flash = { error: 'Tipe item tidak valid.' }
-      return res.redirect(`/procurement/${draftId}`)
+      return res.redirect(`/labhead/${draftId}`)
     }
 
     await prisma.$transaction(async (tx) => {
@@ -488,24 +488,24 @@ export const updateItem = async (req, res) => {
     })
 
     req.session.flash = { success: `Item "${nameTrimmed}" berhasil diperbarui.` }
-    res.redirect(`/procurement/${draftId}`)
+    res.redirect(`/labhead/${draftId}`)
   } catch (err) {
     console.error('Procurement updateItem error:', err)
     req.session.flash = { error: 'Gagal memperbarui item.' }
-    res.redirect(`/procurement/${draftId}`)
+    res.redirect(`/labhead/${draftId}`)
   }
 }
 
 
 /**
- * POST /procurement/:id/lock
+ * POST /labhead/:id/lock
  * Finalize/lock a procurement draft.
  */
 export const lock = async (req, res) => {
   const draftId = parseInt(req.params.id, 10)
   if (isNaN(draftId)) {
     req.session.flash = { error: 'ID draf tidak valid.' }
-    return res.redirect('/procurement')
+    return res.redirect('/labhead')
   }
 
   try {
@@ -516,17 +516,17 @@ export const lock = async (req, res) => {
 
     if (!draft || draft.userId !== req.session.user.id) {
       req.session.flash = { error: 'Draf tidak ditemukan atau Anda tidak memiliki akses.' }
-      return res.redirect('/procurement')
+      return res.redirect('/labhead')
     }
 
     if (draft.status !== 'DRAFT') {
       req.session.flash = { error: 'Draf sudah diajukan atau difinalisasi.' }
-      return res.redirect(`/procurement/${draftId}`)
+      return res.redirect(`/labhead/${draftId}`)
     }
 
     if (draft.procurementDetails.length === 0) {
       req.session.flash = { error: 'Draf kosong tidak dapat dikunci. Silakan tambahkan minimal satu item.' }
-      return res.redirect(`/procurement/${draftId}`)
+      return res.redirect(`/labhead/${draftId}`)
     }
 
     await prisma.procurementDraft.update({
@@ -535,23 +535,23 @@ export const lock = async (req, res) => {
     })
 
     req.session.flash = { success: 'Draf pengadaan berhasil dikunci (locked) dan diajukan.' }
-    res.redirect(`/procurement/${draftId}`)
+    res.redirect(`/labhead/${draftId}`)
   } catch (err) {
     console.error('Procurement lock error:', err)
     req.session.flash = { error: 'Gagal mengunci draf.' }
-    res.redirect(`/procurement/${draftId}`)
+    res.redirect(`/labhead/${draftId}`)
   }
 }
 
 /**
- * POST /procurement/:id/delete
+ * POST /labhead/:id/delete
  * Delete an entire procurement draft along with its items.
  */
 export const destroy = async (req, res) => {
   const draftId = parseInt(req.params.id, 10)
   if (isNaN(draftId)) {
     req.session.flash = { error: 'ID draf tidak valid.' }
-    return res.redirect('/procurement')
+    return res.redirect('/labhead')
   }
 
   try {
@@ -572,12 +572,12 @@ export const destroy = async (req, res) => {
 
     if (!draft || draft.userId !== req.session.user.id) {
       req.session.flash = { error: 'Draf tidak ditemukan atau Anda tidak memiliki akses.' }
-      return res.redirect('/procurement')
+      return res.redirect('/labhead')
     }
 
     if (draft.status !== 'DRAFT') {
       req.session.flash = { error: 'Draf telah diajukan/difinalisasi dan tidak dapat dihapus.' }
-      return res.redirect(`/procurement/${draftId}`)
+      return res.redirect(`/labhead/${draftId}`)
     }
 
     // Delete in sequence
@@ -598,16 +598,16 @@ export const destroy = async (req, res) => {
     })
 
     req.session.flash = { success: 'Draf pengadaan berhasil dihapus.' }
-    res.redirect('/procurement')
+    res.redirect('/labhead')
   } catch (err) {
     console.error('Procurement destroy error:', err)
     req.session.flash = { error: 'Gagal menghapus draf.' }
-    res.redirect(`/procurement/${draftId}`)
+    res.redirect(`/labhead/${draftId}`)
   }
 }
 
 /**
- * GET /procurement/inventory
+ * GET /labhead/inventory
  * Display list of Inventories & BHP (Consumables) for LAB_HEAD with filters.
  */
 export const inventoryIndex = async (req, res) => {
@@ -675,10 +675,10 @@ export const inventoryIndex = async (req, res) => {
       })
     }
 
-    res.render('procurement/inventory', {
+    res.render('labhead/inventory', {
       title: 'Daftar Inventaris & BHP',
       user: res.locals.user,
-      currentPath: '/procurement/inventory',
+      currentPath: '/labhead/inventory',
       inventories,
       consumables,
       rooms,
