@@ -190,19 +190,21 @@ export const maintenanceIndex = async (req, res) => {
   try {
     const { search, condition } = req.query
 
-    const where = {}
+    const inventoryWhere = {
+      item: { consumable: null },
+    }
     if (search) {
-      where.OR = [
+      inventoryWhere.OR = [
         { qrCode: { contains: search } },
-        { item: { name: { contains: search } } }
+        { item: { name: { contains: search } } },
       ]
     }
     if (condition && condition !== 'all') {
-      where.condition = condition
+      inventoryWhere.condition = condition
     }
 
     const inventories = await prisma.inventory.findMany({
-      where: { item: { consumable: null } },
+      where: inventoryWhere,
       include: { item: true, room: true },
       orderBy: { qrCode: 'asc' },
     })
