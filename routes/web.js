@@ -2,7 +2,7 @@ import express from 'express'
 import { showLogin, processLogin, logout, changePassword } from '../controllers/authController.js'
 import * as userController from '../controllers/userController.js'
 import * as roomController from '../controllers/roomController.js'
-import * as procurementController from '../controllers/procurementController.js'
+import * as labheadController from '../controllers/labheadController.js'
 import * as staffController from '../controllers/staffController.js'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import * as adminStaffController from "../controllers/adminStaffController.js";
@@ -56,15 +56,15 @@ router.post('/admin/rooms/:id', requireAuth, requireRole('ADMIN'), roomControlle
 router.post('/admin/rooms/:id/delete', requireAuth, requireRole('ADMIN'), roomController.destroy)
 
 // ─── Kepala Lab: Pengadaan Barang ─────────────────────────────────────────────
-router.get('/procurement', requireAuth, requireRole('LAB_HEAD'), procurementController.index)
-router.post('/procurement', requireAuth, requireRole('LAB_HEAD'), procurementController.store)
-router.get('/procurement/inventory', requireAuth, requireRole('LAB_HEAD'), procurementController.inventoryIndex)
-router.get('/procurement/:id', requireAuth, requireRole('LAB_HEAD'), procurementController.show)
-router.post('/procurement/:id/lock', requireAuth, requireRole('LAB_HEAD'), procurementController.lock)
-router.post('/procurement/:id/items', requireAuth, requireRole('LAB_HEAD'), procurementController.addItem)
-router.post('/procurement/:id/items/:detailId/delete', requireAuth, requireRole('LAB_HEAD'), procurementController.removeItem)
-router.post('/procurement/:id/items/:detailId/edit', requireAuth, requireRole('LAB_HEAD'), procurementController.updateItem)
-router.post('/procurement/:id/delete', requireAuth, requireRole('LAB_HEAD'), procurementController.destroy)
+router.get('/labhead', requireAuth, requireRole('LAB_HEAD'), labheadController.index)
+router.post('/labhead', requireAuth, requireRole('LAB_HEAD'), labheadController.store)
+router.get('/labhead/inventory', requireAuth, requireRole('LAB_HEAD'), labheadController.inventoryIndex)
+router.get('/labhead/:id', requireAuth, requireRole('LAB_HEAD'), labheadController.show)
+router.post('/labhead/:id/lock', requireAuth, requireRole('LAB_HEAD'), labheadController.lock)
+router.post('/labhead/:id/items', requireAuth, requireRole('LAB_HEAD'), labheadController.addItem)
+router.post('/labhead/:id/items/:detailId/delete', requireAuth, requireRole('LAB_HEAD'), labheadController.removeItem)
+router.post('/labhead/:id/items/:detailId/edit', requireAuth, requireRole('LAB_HEAD'), labheadController.updateItem)
+router.post('/labhead/:id/delete', requireAuth, requireRole('LAB_HEAD'), labheadController.destroy)
 
 // ─── Staf Laboratorium: Pengelolaan & Maintenance ─────────────────────────────
 router.get('/staff/bhp', requireAuth, requireRole('LAB_STAFF'), staffController.bhpIndex)

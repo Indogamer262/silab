@@ -10,7 +10,7 @@ block content
 
   //- Filter Form
   .bg-white.rounded-xl.shadow-sm.border.border-gray-100.p-6.mb-6
-    form(action="/procurement/inventory" method="GET" class="space-y-4")
+    form(action="/labhead/inventory" method="GET" class="space-y-4")
       .grid.grid-cols-1(class="md:grid-cols-4").gap-4
         //- Search
         .flex.flex-col.gap-1
@@ -62,7 +62,7 @@ block content
 
         .flex.items-end.gap-2.h-full.pt-4(class="md:col-span-3 justify-end")
           button(type="submit" class="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-5 py-1.5 rounded-lg text-sm font-semibold transition shadow-sm") Terapkan Filter
-          a(href="/procurement/inventory" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-1.5 rounded-lg text-sm font-semibold transition border border-gray-200") Reset Filter
+          a(href="/labhead/inventory" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-1.5 rounded-lg text-sm font-semibold transition border border-gray-200") Reset Filter
 
   //- List Inventaris
   if selectedType === 'all' || selectedType === 'inventaris'

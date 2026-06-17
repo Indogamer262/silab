@@ -20,13 +20,13 @@ block content
     div
       h3.text-2xl.font-bold.text-gray-800 Daftar Pengadaan Barang
       p.text-sm.text-gray-500.mt-1 Kelola draf usulan pengadaan barang inventaris tahunan dan barang habis pakai (BHP).
-    form(action="/procurement" method="POST")
+    form(action="/labhead" method="POST")
       button(type="submit" class="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 active:bg-blue-800 transition font-semibold text-sm shadow-sm")
         | + Buat Draf Baru
 
   //- Filter Form
   .bg-white.rounded-xl.shadow-sm.border.border-gray-100.p-4.mb-6
-    form(action="/procurement" method="GET" class="flex flex-wrap items-center gap-4")
+    form(action="/labhead" method="GET" class="flex flex-wrap items-center gap-4")
       .flex.flex-col.gap-1.min-w-40
         label(for="filter-year").text-xs.font-semibold.text-gray-500 Filter Tahun
         select(name="year" id="filter-year" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition")
@@ -44,7 +44,7 @@ block content
 
       .flex.items-end.gap-2.h-full.pt-5
         button(type="submit" class="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-4 py-1.5 rounded-lg text-sm font-semibold transition shadow-sm") Filter
-        a(href="/procurement" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-1.5 rounded-lg text-sm font-semibold transition border border-gray-200") Reset
+        a(href="/labhead" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-1.5 rounded-lg text-sm font-semibold transition border border-gray-200") Reset
 
   //- Table
   .bg-white.rounded-xl.shadow-sm.border.border-gray-100.overflow-hidden
@@ -85,12 +85,12 @@ block content
                 td.px-6.py-4.text-center
                   .flex.items-center.justify-center.gap-2
                     if draft.status !== 'DRAFT'
-                      a(href=`/procurement/${draft.id}` class="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-4 py-2 rounded-lg transition font-semibold text-sm shadow-sm")
+                      a(href=`/labhead/${draft.id}` class="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-4 py-2 rounded-lg transition font-semibold text-sm shadow-sm")
                         | Lihat Detail
                     else
-                      +warningButton('Edit / Kelola', `/procurement/${draft.id}`)
+                      +warningButton('Edit / Kelola', `/labhead/${draft.id}`)
                       if draft.procurementDetails.length === 0
-                        form(id=`form-del-${draft.id}` action=`/procurement/${draft.id}/delete` method="POST" class="inline-block")
+                        form(id=`form-del-${draft.id}` action=`/labhead/${draft.id}/delete` method="POST" class="inline-block")
                           button(
                             type="button"
                             class="inline-flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 active:bg-red-800 transition font-semibold text-sm shadow-sm"
